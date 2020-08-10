@@ -11,11 +11,8 @@ import json
 import boto3
 
 class Bucket:
-    def __init__(self, name, root):
-        if not root.endswith("/"):
-            root = root + "/"
+    def __init__(self, name):
         self.name = name
-        self.root = root
         self.bucket = boto3.resource('s3').Bucket(name)
         self.new_files = []
         self.uploaded = []
@@ -23,14 +20,11 @@ class Bucket:
     def up_jsgz(self, data, target, commet=None):
         if data is None:
             return
-        if target.startswith("/"):
-            target = target[1:]
-        target = self.root + target
         if target.endswith("/"):
             target = target + "data"
         target = target + ".json.gz"
 
-        if not self.exist(target, no_append_root=False):
+        if not self.exist(target):
             self.new_files.append(target)
         compressed_fp = BytesIO()
         with gzip.GzipFile(fileobj=compressed_fp, mode='w') as gz:
@@ -48,11 +42,7 @@ class Bucket:
             {'ContentType': 'application/json', 'ContentEncoding': 'gzip'}
         )
 
-    def exist(self, target, no_append_root=False):
-        if no_append_root is False:
-            if target.startswith("/"):
-                target = target[1:]
-            target = self.root + target
+    def exist(self, target):
         objs = list(self.bucket.objects.filter(Prefix=target))
         if any([w.key == target for w in objs]):
             return True
@@ -68,9 +58,6 @@ class Bucket:
         :param suffix: Only fetch objects whose keys end with
             this suffix (optional).
         """
-        if prefix.startswith("/"):
-            prefix = prefix[1:]
-        prefix = self.root + prefix
 
         s3 = boto3.client("s3")
         paginator = s3.get_paginator("list_objects_v2")

@@ -31,13 +31,13 @@ if not api.bases:
 
 re_year = re.compile(r".*/year=(\d+).*")
 cYear = datetime.now().year
-bucket = Bucket(os.environ['S3_TARGET'], "raw")
+bucket = Bucket(os.environ['S3_TARGET'])
 
 bucket.up_jsgz(api.bases, "BASES/", commet=api.last_url)
 
 def get_years(table, base):
     years = set()
-    for fl in bucket.s3glob("{}/base={}/year=*".format(table, base)):
+    for fl in bucket.s3glob("/raw/{}/base={}/year=*".format(table, base)):
         m = re_year.search(fl)
         years.add(int(m.group(1)))
     if cYear in years:
@@ -58,9 +58,9 @@ if args.dia:
                         visto.add(year)
                         if dias is None:
                             continue
-                        target = "DIA/base={}/year={}/".format(b['indicativo'], year)
+                        target = "raw/DIA/base={}/year={}/".format(b['indicativo'], year)
                         if len(dias)==0:
-                            target = "DIA/base={}/year={}.txt".format(b['indicativo'], year)
+                            target = "raw/DIA/base={}/year={}.txt".format(b['indicativo'], year)
                         bucket.up_jsgz(
                             dias,
                             target,
@@ -76,9 +76,9 @@ if args.mes:
             meses = api.get_mes_estacion(b['indicativo'], year)
             if meses is None:
                 continue
-            target = "MES/base={}/year={}/".format(b['indicativo'], year)
+            target = "raw/MES/base={}/year={}/".format(b['indicativo'], year)
             if len(meses)==0:
-                target = "MES/base={}/year={}.txt".format(b['indicativo'], year)
+                target = "raw/MES/base={}/year={}.txt".format(b['indicativo'], year)
             bucket.up_jsgz(
                 meses,
                 target,
@@ -89,4 +89,4 @@ uploaded = [i.rsplit("/", 1)[0] for i in bucket.uploaded if ".txt." not in i]
 if uploaded:
     logging.info("{} ficheros actualizados".format(len(uploaded)))
     logging.info("Se ejecutara el crawler de AWS Glu")
-    Glu("aemet-raw").start()#*uploaded)
+    Glu(os.environ['GLUE_TARGET']).start()#*uploaded)
