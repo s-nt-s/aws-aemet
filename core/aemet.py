@@ -290,7 +290,7 @@ class Aemet:
         if year > cYear:
             return None
         del_key = ("nombre", "provincia", "indicativo", "altitud")
-        logging.info("MENSUAL %s [%s ,%s]", id, year, year)
+        logging.info("MENSUAL %s %s", id, year)
         url = self.url.estacion.mensual.format(id=id, ini=year)
         data = self.get_json(url, no_data=[])
         if data is None or not isinstance(data, list):

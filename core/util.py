@@ -1,12 +1,15 @@
 import json
 import logging
 import os
+from datetime import datetime
 
 import yaml
 from bunch import Bunch
 from io import BytesIO
 import gzip
 import shutil
+import argparse
+import logging
 
 
 def save_js(file, *datas, indent=2, **kargv):
@@ -86,3 +89,31 @@ def sexa_to_dec(i):
     if o in ("S", "W"):
         return -d
     return d
+
+def read_file(fl):
+    with open(fl, "r") as f:
+        return f.read()
+
+def mkArg(main, **kargv):
+    parser = argparse.ArgumentParser(main)
+    parser.add_argument('--verbose', '-v', action='count',
+                        help="Nivel de depuración", default=int(os.environ.get("DEBUG_LEVEL", 0)))
+    for k, v in kargv.items():
+        parser.add_argument('--'+k, action='store_true', help=v)
+    args = parser.parse_args()
+
+    levels = [logging.WARNING, logging.INFO, logging.DEBUG]
+    args.verbose = levels[min(len(levels)-1, args.verbose)]
+
+    logging.basicConfig(
+        level= args.verbose, format='%(asctime)s - %(levelname)s - %(message)s')
+
+    return args
+
+now = datetime.now()
+YEAR = now.year
+YEAR_UPDATE=[]
+if now.month < 4:
+    YEAR_UPDATE.append(YEAR-1)
+YEAR_UPDATE.append(YEAR)
+YEAR_UPDATE=tuple(YEAR_UPDATE)

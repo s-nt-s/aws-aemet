@@ -11,3 +11,10 @@ sea capar de aceptar como entrada una provincia y se encargue internamente
 de agregar todos los datos de sus bases.
 De esta manera, esta agregación sera transparente para las aplicaciones que
 consuman nuestra API-AWS (en vez de la de la AEMET).
+
+# Requisitos
+
+```console
+$ apt install libpq-dev postgresql-client-common postgresql-client-11
+$ pip install -r requirement.txt
+```

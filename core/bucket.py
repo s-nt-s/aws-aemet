@@ -73,7 +73,6 @@ class Bucket:
 
         for key_prefix in prefixes:
             kwargs["Prefix"] = key_prefix
-
             for page in paginator.paginate(**kwargs):
                 try:
                     contents = page["Contents"]
@@ -98,5 +97,19 @@ class Bucket:
             yield obj["Key"]
 
     def s3glob(self, path):
-        prefix, suffix = path.split("*")
+        if "*" in path:
+            prefix, suffix = path.split("*")
+        else:
+            prefix = path
+            suffix = ""
         return self.get_matching_s3_keys(prefix, suffix)
+
+    def exists(self, path):
+        for i in self.s3glob(path):
+            if path[-1] in ("*", "/") or path == i:
+                return True
+        return False
+
+    def delete(self, prefix):
+        for item in self.bucket.objects.filter(Prefix=prefix):
+            item.delete()
