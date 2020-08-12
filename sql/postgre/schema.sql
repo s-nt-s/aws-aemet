@@ -23,11 +23,11 @@ CREATE TABLE public.dias (
   base varchar NOT NULL,
   fecha date NOT NULL,
   dir int4 NULL,
-  horapresmax time NULL,
-  horapresmin time NULL,
-  horaracha time NULL,
-  horatmax time NULL,
-  horatmin time NULL,
+  horapresmax float4 NULL,
+  horapresmin float4 NULL,
+  horaracha float4 NULL,
+  horatmax float4 NULL,
+  horatmin float4 NULL,
   prec float4 NULL,
   presmax float4 NULL,
   presmin float4 NULL,
@@ -38,16 +38,16 @@ CREATE TABLE public.dias (
   tmin float4 NULL,
   velmedia float4 NULL,
   CONSTRAINT dia_pk PRIMARY KEY (base, fecha),
-  CONSTRAINT dia_fk FOREIGN KEY (base) REFERENCES bases(id)
+  CONSTRAINT dia_fk FOREIGN KEY (base) REFERENCES bases(id) DEFERRABLE
 );
 
 COMMENT ON TABLE public.dias IS 'Historico diario';
 COMMENT ON COLUMN public.dias.dir IS 'Dirección de la racha máxima en decenas de grado';
-COMMENT ON COLUMN public.dias.horapresmax IS 'Hora de la presión máxima (redondeada a la hora entera más próxima)';
-COMMENT ON COLUMN public.dias.horapresmin IS 'Hora de la presión mínima (redondeada a la hora entera más próxima)';
-COMMENT ON COLUMN public.dias.horaracha IS 'Hora y minuto de la racha máxima';
-COMMENT ON COLUMN public.dias.horatmax IS 'hora de la tmin';
-COMMENT ON COLUMN public.dias.horatmin IS 'hora de la tmax';
+COMMENT ON COLUMN public.dias.horapresmax IS 'Hora de la presión máxima (redondeada a la hora entera más próxima). Formato HH.MM (-1 = varias)';
+COMMENT ON COLUMN public.dias.horapresmin IS 'Hora de la presión mínima (redondeada a la hora entera más próxima). Formato HH.MM (-1 = varias)';
+COMMENT ON COLUMN public.dias.horaracha IS 'Hora y minuto de la racha máxima. Formato HH.MM (-1 = varias)';
+COMMENT ON COLUMN public.dias.horatmax IS 'hora de la tmin. Formato HH.MM (-1 = varias)';
+COMMENT ON COLUMN public.dias.horatmin IS 'hora de la tmax. Formato HH.MM (-1 = varias)';
 COMMENT ON COLUMN public.dias.prec IS 'Precipitación diaria de 07 a 07 en mm o 0.09 (‘Ip’) si es mejor que 0,1 mm';
 COMMENT ON COLUMN public.dias.presmax IS 'Prexión máxima (hPa) al nivel de referencia de la estación';
 COMMENT ON COLUMN public.dias.presmin IS 'Prexión mínima (hPa) al nivel de referencia de la estación';
@@ -86,15 +86,15 @@ CREATE TABLE public.meses (
   nv_1000 int4 NULL,
   nw_55 int4 NULL,
   nw_91 int4 NULL,
-  p_max varchar NULL,
+  -- p_max varchar NULL,
   p_mes float4 NULL,
   p_sol int4 NULL,
   q_mar float4 NULL,
-  q_max varchar NULL,
+  -- q_max varchar NULL,
   q_med float4 NULL,
-  q_min varchar NULL,
-  ta_max varchar NULL,
-  ta_min varchar NULL,
+  -- q_min varchar NULL,
+  -- ta_max varchar NULL,
+  -- ta_min varchar NULL,
   ti_max float4 NULL,
   tm_max float4 NULL,
   tm_mes float4 NULL,
@@ -104,10 +104,10 @@ CREATE TABLE public.meses (
   ts_50 float4 NULL,
   ts_min float4 NULL,
   w_med int4 NULL,
-  w_racha varchar NULL,
+  -- w_racha varchar NULL,
   w_rec int4 NULL,
   CONSTRAINT mes_pk PRIMARY KEY (base, fecha),
-  CONSTRAINT mes_fk FOREIGN KEY (base) REFERENCES bases(id)
+  CONSTRAINT mes_fk FOREIGN KEY (base) REFERENCES bases(id) DEFERRABLE
 );
 
 COMMENT ON TABLE public.meses IS 'Historico mensual';
@@ -136,15 +136,15 @@ COMMENT ON COLUMN public.meses.nv_0100 IS 'Nº de días con visibilidad >=50m y 
 COMMENT ON COLUMN public.meses.nv_1000 IS 'Nº de días con visibilidad >=100, y <1km';
 COMMENT ON COLUMN public.meses.nw_55 IS 'Nº de días de velocidad del viento >= 55 Km/h';
 COMMENT ON COLUMN public.meses.nw_91 IS 'Nº de días de velocidad del viento >= 91 Km/h';
-COMMENT ON COLUMN public.meses.p_max IS 'Precipitaciones (mm)máxima diaria';
+-- COMMENT ON COLUMN public.meses.p_max IS 'Precipitaciones (mm)máxima diaria';
 COMMENT ON COLUMN public.meses.p_mes IS 'Precipitaciones (mm) total';
 COMMENT ON COLUMN public.meses.p_sol IS 'Porcentaje medio mensual de la insolación diaria frente a la insolación teórica';
 COMMENT ON COLUMN public.meses.q_mar IS 'Presión (hPa) media al nivel del mar';
-COMMENT ON COLUMN public.meses.q_max IS 'Presión (hPa) máxima absoluta';
+-- COMMENT ON COLUMN public.meses.q_max IS 'Presión (hPa) máxima absoluta';
 COMMENT ON COLUMN public.meses.q_med IS 'Presión (hPa) media al nivel de la estación';
-COMMENT ON COLUMN public.meses.q_min IS 'Presión (hPa) mínima absoluta';
-COMMENT ON COLUMN public.meses.ta_max IS 'Temperatura (grados Celsius) máxima absoluta';
-COMMENT ON COLUMN public.meses.ta_min IS 'Temperatura (grados Celsius) mínima absoluta';
+-- COMMENT ON COLUMN public.meses.q_min IS 'Presión (hPa) mínima absoluta';
+-- COMMENT ON COLUMN public.meses.ta_max IS 'Temperatura (grados Celsius) máxima absoluta';
+-- COMMENT ON COLUMN public.meses.ta_min IS 'Temperatura (grados Celsius) mínima absoluta';
 COMMENT ON COLUMN public.meses.ti_max IS 'Temperatura (grados Celsius) máxima más baja';
 COMMENT ON COLUMN public.meses.tm_max IS 'Temperatura (grados Celsius) media de las máxima';
 COMMENT ON COLUMN public.meses.tm_mes IS 'Temperatura (grados Celsius) media';
@@ -154,5 +154,7 @@ COMMENT ON COLUMN public.meses.ts_20 IS 'Temperatura (grados Celsius) media a 20
 COMMENT ON COLUMN public.meses.ts_50 IS 'Temperatura (grados Celsius) media a 50 cm de profundidad';
 COMMENT ON COLUMN public.meses.ts_min IS 'Temperatura (grados Celsius) mínima más alta';
 COMMENT ON COLUMN public.meses.w_med IS 'Velocidad media en km/h elaborada a partir de las observaciones de 07, 13 y 18 UTC';
-COMMENT ON COLUMN public.meses.w_racha IS 'Dirección en decenas de grado, velocidad en m/sg y fecha de la racha máxima';
+-- COMMENT ON COLUMN public.meses.w_racha IS 'Dirección en decenas de grado, velocidad en m/sg y fecha de la racha máxima';
 COMMENT ON COLUMN public.meses.w_rec IS 'Recorrido medio diario (de 07 a 07 UTC) en Km';
+
+commit;

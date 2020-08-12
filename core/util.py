@@ -5,9 +5,6 @@ from datetime import datetime
 
 import yaml
 from bunch import Bunch
-from io import BytesIO
-import gzip
-import shutil
 import argparse
 import logging
 
@@ -90,9 +87,11 @@ def sexa_to_dec(i):
         return -d
     return d
 
+
 def read_file(fl):
     with open(fl, "r") as f:
         return f.read()
+
 
 def mkArg(main, **kargv):
     parser = argparse.ArgumentParser(main)
@@ -106,14 +105,15 @@ def mkArg(main, **kargv):
     args.verbose = levels[min(len(levels)-1, args.verbose)]
 
     logging.basicConfig(
-        level= args.verbose, format='%(asctime)s - %(levelname)s - %(message)s')
+        level=args.verbose, format='%(asctime)s - %(levelname)s - %(message)s')
 
     return args
 
+
 now = datetime.now()
 YEAR = now.year
-YEAR_UPDATE=[]
+YEAR_UPDATE = []
 if now.month < 4:
     YEAR_UPDATE.append(YEAR-1)
 YEAR_UPDATE.append(YEAR)
-YEAR_UPDATE=tuple(YEAR_UPDATE)
+YEAR_UPDATE = tuple(YEAR_UPDATE)

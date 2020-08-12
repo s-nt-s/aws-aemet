@@ -1,10 +1,14 @@
 import psycopg2
 import boto3
+from botocore.exceptions import ClientError
+import logging
+
 
 class DB:
     def __init__(self, config):
         host, db, user, psw = config.split()
-        self.con = psycopg2.connect(host=host, database=db, user=user, password=psw)
+        self.con = psycopg2.connect(
+            host=host, database=db, user=user, password=psw)
 
     def close(self):
         self.con.close()
@@ -16,19 +20,31 @@ class DB:
             yield r
         c.close()
 
+    def one(self, sql):
+        c = self.con.cursor()
+        c.execute(sql)
+        r = c.fetchone()
+        if len(r) == 1:
+            r = r[0]
+        c.close()
+        return r
+
     def version(self):
         for i in self.select("SELECT version()"):
             return i[0]
 
-    def copy(self, url, table, key=None, delimiter="\t"):
+    def copy(self, url, table, key=None, delimiter=","):
+        logging.info("COPY in {} from {}".format(table, url))
         obj = None
         s3 = boto3.client('s3')
         try:
-            bucket, file = url.split("/",3)[2:]
+            bucket, file = url.split("/", 3)[2:]
             obj = s3.get_object(Bucket=bucket, Key=file)
         except ClientError:
             return False
         try:
+            if self.one("select count(*) from "+table) == 0:
+                key = None
             c = self.con.cursor()
             if key:
                 c.execute('''
@@ -43,19 +59,20 @@ class DB:
             '''.format(
                 ("tmp_"+table) if key else table,
                 delimiter
-            ), file=obj['Body'], table)
+            ), file=obj['Body'])
             if key:
+                c.execute("SET CONSTRAINTS ALL DEFERRED")
                 c.execute('''
                     delete from {0}
-                    where {1} in (
+                    where ({1}) in (
                         select {1}
                         from tmp_{0}
                     );
-                '''.fromat(table, key))
+                '''.format(table, key))
                 c.execute('''
-                    insert  into {}
+                    insert  into {0}
                     select  *
-                    from    tmp_{};
+                    from    tmp_{0};
                 '''.format(table))
             self.con.commit()
             c.close()

@@ -15,6 +15,7 @@ from .util import mkBunch, safe_number, sexa_to_dec
 
 cYear = datetime.now().year
 
+
 def get_txt(soup, slc):
     n = soup.select_one(slc)
     if n is None:
@@ -34,7 +35,7 @@ class Aemet:
             logging.warning(
                 "No se ha facilitado api key, por lo tanto solo estaran disponibles los endpoints xml")
         self.now = datetime.now()
-        self.sleep_time = 61
+        self.sleep_time = 60
         self.requests_verify = not(os.environ.get(
             "AVOID_REQUEST_VERIFY") == "true")
         logging.info("requests_verify = " + str(self.requests_verify))
@@ -113,7 +114,8 @@ class Aemet:
             return r
         except Exception as e:
             if intentos < 4:
-                logging.info("sleep:{} en {}".format(self.sleep_time, url_debug))
+                logging.info("sleep:{} en {}".format(
+                    self.sleep_time, url_debug))
                 time.sleep(self.sleep_time)
                 return self._get(url, url_debug=url_debug, intentos=intentos+1)
             logging.critical("GET "+(url_debug or url) +
@@ -128,7 +130,8 @@ class Aemet:
             j = r.json()
         except Exception as e:
             if "429 Too Many Requests" in r.text:
-                logging.info("sleep:{} por error url_api:429:Too Many Requests".format(self.sleep_time))
+                logging.info(
+                    "sleep:{} por error url_api:429:Too Many Requests".format(self.sleep_time))
                 time.sleep(self.sleep_time)
                 return self.get_json(url, no_data=no_data)
             logging.critical("GET "+url+" > "+str(r.text) +
@@ -142,7 +145,8 @@ class Aemet:
                 return no_data
             if estado == 429:
                 # Too Many Requests
-                logging.info("sleep:{} por error url_api:429:Too Many Requests".format(self.sleep_time))
+                logging.info(
+                    "sleep:{} por error url_api:429:Too Many Requests".format(self.sleep_time))
                 time.sleep(self.sleep_time)
                 return self.get_json(url, no_data=no_data)
             logging.critical("GET "+url+" > "+str(j), exc_info=True)
@@ -156,15 +160,17 @@ class Aemet:
             j = r.json()
         except Exception as e:
             if "429 Too Many Requests" in r.text:
-                logging.info("sleep:{} por error url_datos:429:Too Many Requests".format(self.sleep_time))
+                logging.info(
+                    "sleep:{} por error url_datos:429:Too Many Requests".format(self.sleep_time))
                 time.sleep(self.sleep_time)
                 return self.get_json(url, no_data=no_data)
             logging.critical("GET "+url_datos+" > " +
                              str(r.text)+" > "+str(e), exc_info=True)
             return None
-        if isinstance(j, dict) and j.get("estado")==429:
+        if isinstance(j, dict) and j.get("estado") == 429:
             # Too Many Requests
-            logging.info("sleep:{} por error url_datos:429:Too Many Requests".format(self.sleep_time))
+            logging.info(
+                "sleep:{} por error url_datos:429:Too Many Requests".format(self.sleep_time))
             time.sleep(self.sleep_time)
             return self.get_json(url, no_data=no_data)
         return j

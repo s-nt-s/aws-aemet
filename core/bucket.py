@@ -1,14 +1,12 @@
 import json
-import logging
-import os
 
 import yaml
 from bunch import Bunch
-from io import StringIO, BytesIO
+from io import BytesIO
 import gzip
-import shutil
 import json
 import boto3
+
 
 class Bucket:
     def __init__(self, name):
@@ -83,7 +81,6 @@ class Bucket:
                     key = obj["Key"]
                     if key.endswith(suffix):
                         yield obj
-
 
     def get_matching_s3_keys(self, prefix="", suffix=""):
         """

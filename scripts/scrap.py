@@ -2,17 +2,16 @@
 
 from core.aemet import Aemet
 from core.bucket import Bucket
-from core.glu import Glu
+from core.glue import Glue
 from core.util import YEAR_UPDATE, YEAR, mkArg
-import sys
 import os
 from datetime import datetime
 import re
 
-import argparse
 import logging
 
-args = mkArg("Scraping de la AEMET",
+args = mkArg(
+    "Scraping de la AEMET",
     mes="Hace scraping de los datos mensuales",
     dia="Hace scraping de los datos diarios"
 )
@@ -28,6 +27,7 @@ bucket = Bucket(os.environ['S3_TARGET'])
 
 bucket.up_jsgz(api.bases, "raw/AEMET/BASES/", commet=api.last_url)
 
+
 def get_years(table, base):
     years = set()
     for fl in bucket.s3glob("raw/AEMET/{}/base={}/year=*".format(table, base)):
@@ -38,21 +38,25 @@ def get_years(table, base):
             years.remove(y)
     return years
 
+
 if args.dia:
     logging.info("AEMET DIA")
     for b in api.bases:
         visto = get_years("DIA", b['indicativo'])
         for y in range(Aemet.YEAR_ZERO, YEAR+1):
             if y not in visto:
-                year_dias = api.get_dia_estacion(b['indicativo'], y, expand=True)
+                year_dias = api.get_dia_estacion(
+                    b['indicativo'], y, expand=True)
                 if year_dias is not None:
                     for year, dias in year_dias.items():
                         visto.add(year)
                         if dias is None:
                             continue
-                        target = "raw/AEMET/DIA/base={}/year={}/".format(b['indicativo'], year)
-                        if len(dias)==0:
-                            target = "raw/AEMET/DIA/base={}/year={}.txt".format(b['indicativo'], year)
+                        target = "raw/AEMET/DIA/base={}/year={}/".format(
+                            b['indicativo'], year)
+                        if len(dias) == 0:
+                            target = "raw/AEMET/DIA/base={}/year={}.txt".format(
+                                b['indicativo'], year)
                         bucket.up_jsgz(
                             dias,
                             target,
@@ -68,9 +72,11 @@ if args.mes:
             meses = api.get_mes_estacion(b['indicativo'], year)
             if meses is None:
                 continue
-            target = "raw/AEMET/MES/base={}/year={}/".format(b['indicativo'], year)
-            if len(meses)==0:
-                target = "raw/AEMET/MES/base={}/year={}.txt".format(b['indicativo'], year)
+            target = "raw/AEMET/MES/base={}/year={}/".format(
+                b['indicativo'], year)
+            if len(meses) == 0:
+                target = "raw/AEMET/MES/base={}/year={}.txt".format(
+                    b['indicativo'], year)
             bucket.up_jsgz(
                 meses,
                 target,
@@ -78,7 +84,7 @@ if args.mes:
             )
 
 uploaded = [i.rsplit("/", 1)[0] for i in bucket.uploaded if ".txt." not in i]
-if uploaded and False:
+if uploaded:
     logging.info("{} ficheros actualizados".format(len(uploaded)))
-    logging.info("Se ejecutara el crawler de AWS Glu")
-    Glu(os.environ['GLUE_TARGET']).start()#*uploaded)
+    logging.info("Se ejecutara el crawler de AWS Glue")
+    Glue(os.environ['GLUE_TARGET']).start()  # *uploaded)
