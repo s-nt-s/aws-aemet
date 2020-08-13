@@ -11,10 +11,7 @@ import requests
 from bunch import Bunch
 
 from .provincias import prov_to_cod
-from .util import mkBunch, safe_number, sexa_to_dec
-
-cYear = datetime.now().year
-
+from .util import mkBunch, safe_number, sexa_to_dec, YEAR
 
 def get_txt(soup, slc):
     n = soup.select_one(slc)
@@ -257,11 +254,11 @@ class Aemet:
     def get_dia_estacion(self, id, year, expand=True):
         if year < Aemet.YEAR_ZERO:
             return []
-        if year > cYear:
+        if year > YEAR:
             return None
         fin = year
         if expand:
-            fin = min(year+4, cYear)
+            fin = min(year+4, YEAR)
             a = date(year, 1, 1)
             b = date(fin, 12, 31)
             if fin > year:
@@ -293,7 +290,7 @@ class Aemet:
     def get_mes_estacion(self, id, year):
         if year < Aemet.YEAR_ZERO:
             return []
-        if year > cYear:
+        if year > YEAR:
             return None
         del_key = ("nombre", "provincia", "indicativo", "altitud")
         logging.info("MENSUAL %s %s", id, year)
