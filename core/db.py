@@ -11,6 +11,7 @@ class DB:
             host=host, database=db, user=user, password=psw)
 
     def close(self):
+        self.con.commit()
         self.con.close()
 
     def select(self, sql):
@@ -30,8 +31,15 @@ class DB:
         return r
 
     def version(self):
-        for i in self.select("SELECT version()"):
-            return i[0]
+        return self.one("SELECT version()")
+
+    def refresh(self, *tables):
+        c = self.con.cursor()
+        for table in tables:
+            logging.info("REFRESH MATERIALIZED VIEW "+table)
+            c.execute("REFRESH MATERIALIZED VIEW "+table)
+            self.con.commit()
+        c.close()
 
     def copy(self, url, table, key=None, delimiter=","):
         logging.info("COPY in {} from {}".format(table, url))

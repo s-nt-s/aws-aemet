@@ -8,53 +8,64 @@ from core.aemet import Aemet
 import psycopg2
 import os
 
-args = mkArg(
-    "Actualiza la base de datos",
-    mes="Actualiza los datos mensuales",
-    dia="Actualiza los datos diarios"
-)
+class Update:
+    def __init__(self, db, bucket, athena):
+        self.db = db
+        self.bucket = bucket
+        self.athena = athena
 
-db = DB(os.environ['DB_TARGET'])
-bucket = Bucket(os.environ['S3_TARGET'])
-athena = Athena(os.environ['ATHENA_TARGET'],
-                "s3://{}/tmp/".format(os.environ['S3_TARGET']))
+    def get_years(self, sql):
+        visto = [i[0] for i in self.db.select(sql)]
+        years = []
+        for y in range(Aemet.YEAR_ZERO, YEAR+1):
+            if y not in visto or y in YEAR_UPDATE:
+                years.append(y)
+        return tuple(years)
+
+    def copy(self, sql, table, key=None):
+        self.athena.query(sql)
+        output = self.athena.wait()
+        self.db.copy(output, table, key=key)
+        self.bucket.delete(output.split("/", 3)[-1])
+
+    def do_bases(self):
+        sql = read_file("sql/athena/bases.sql").strip()
+        self.copy(sql, "bases", key="id")
+
+    def do_dia(self):
+        years = self.get_years("select distinct EXTRACT(year FROM fecha) from dias")
+        sql = read_file("sql/athena/dia.sql").strip()
+        if years != tuple(range(Aemet.YEAR_ZERO, YEAR+1)):
+            years = [str(y) for y in years]
+            sql = sql.rstrip() + " and\n  "+Athena.gWhere("year", years)
+        self.copy(sql,  "dias", key="base, fecha")
+
+    def do_mes(self):
+        years = self.get_years("select distinct EXTRACT(year FROM fecha) from meses")
+        sql = read_file("sql/athena/mes.sql").strip()
+        if years != tuple(range(Aemet.YEAR_ZERO, YEAR+1)):
+            years = [str(y) for y in years]
+            sql = sql.rstrip() + " and\n  "+Athena.gWhere("year", years)
+        self.copy(sql, "meses", key="base, fecha")
 
 
-def get_years(sql):
-    visto = [i[0] for i in db.select(sql)]
-    years = []
-    for y in range(Aemet.YEAR_ZERO, YEAR+1):
-        if y not in visto or y in YEAR_UPDATE:
-            years.append(y)
-    return tuple(years)
+if __name__ == "__main__":
+    args = mkArg(
+        "Actualiza la base de datos",
+        mes="Actualiza los datos mensuales",
+        dia="Actualiza los datos diarios"
+    )
 
+    up = Update(
+        DB(os.environ['DB_TARGET']),
+        Bucket(os.environ['S3_TARGET']),
+        Athena(os.environ['ATHENA_TARGET'], "s3://{}/tmp/".format(os.environ['S3_TARGET']))
+    )
 
-sql = read_file("sql/athena/bases.sql").strip()
-athena.query(sql)
-output = athena.wait()
-db.copy(output, "bases", key="id")
-bucket.delete(output.split("/", 3)[-1])
+    up.do_bases()
+    if args.dia:
+        up.do_dia()
+    if args.mes:
+        up.do_mes()
 
-if args.dia:
-    years = get_years("select distinct EXTRACT(year FROM fecha) from dias")
-    sql = read_file("sql/athena/dia.sql").strip()
-    if years != tuple(range(Aemet.YEAR_ZERO, YEAR+1)):
-        years = [str(y) for y in years]
-        sql = sql.rstrip() + " and\n  "+Athena.gWhere("year", years)
-    athena.query(sql)
-    output = athena.wait()
-    db.copy(output, "dias", key="base, fecha")
-    bucket.delete(output.split("/", 3)[-1])
-
-if args.mes:
-    years = get_years("select distinct EXTRACT(year FROM fecha) from meses")
-    sql = read_file("sql/athena/mes.sql").strip()
-    if years != tuple(range(Aemet.YEAR_ZERO, YEAR+1)):
-        years = [str(y) for y in years]
-        sql = sql.rstrip() + " and\n  "+Athena.gWhere("year", years)
-    athena.query(sql)
-    output = athena.wait()
-    db.copy(output, "meses", key="base, fecha")
-    bucket.delete(output.split("/", 3)[-1])
-
-db.close()
+    up.db.close()

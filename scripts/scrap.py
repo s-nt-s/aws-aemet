@@ -85,7 +85,6 @@ class Scrap:
         uploaded = [i.rsplit("/", 1)[0] for i in self.bucket.uploaded if ".txt." not in i]
         if uploaded:
             logging.info("{} ficheros actualizados".format(len(uploaded)))
-            logging.info("Se ejecutara el crawler de AWS Glue")
             self.glue.start()  # *uploaded)
             return True
         return False
@@ -96,10 +95,10 @@ if __name__ == "__main__":
         mes="Hace scraping de los datos mensuales",
         dia="Hace scraping de los datos diarios"
     )
-    s = Scrap(Bucket(os.environ['S3_TARGET']), Glue(os.environ['GLUE_TARGET']))
+    sc = Scrap(Bucket(os.environ['S3_TARGET']), Glue(os.environ['GLUE_TARGET']))
     if args.dia:
-        s.do_dia()
+        sc.do_dia()
     if args.mes:
-        s.do_mes()
-    if s.update():
-        s.glue.raise_if_error()
+        sc.do_mes()
+    if sc.update():
+        sc.glue.raise_if_error()

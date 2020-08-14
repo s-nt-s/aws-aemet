@@ -9,9 +9,7 @@ phases:
       - sed -e '/^boto/d' -i requirements.txt
   build:
     commands:
-      #- apt-get update
-      #- apt-get install -y libpq-dev postgresql-client-common postgresql-client-11
       - pip install -r requirements.txt
   post_build:
     commands:
-      - python -m scripts.update -v --mes
+      - python run.py -v "${ARG}"
