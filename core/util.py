@@ -76,7 +76,6 @@ def safe_number(s, label=None, coma=False, nan=None):
         return int(s)
     return s
 
-
 def sexa_to_dec(i):
     g = i[0:2]
     m = i[2:4]
@@ -108,6 +107,22 @@ def mkArg(main, **kargv):
         level=args.verbose, format='%(asctime)s - %(levelname)s - %(message)s')
 
     return args
+
+def flatten_json(y):
+    out = {}
+    def flatten(x, name=''):
+        if type(x) is dict:
+            for a in x:
+                flatten(x[a], name + a + '_')
+        elif type(x) is list:
+            i = 0
+            for a in x:
+                flatten(a, name + str(i) + '_')
+                i += 1
+        else:
+            out[name[:-1]] = x
+    flatten(y)
+    return out
 
 
 now = datetime.now()

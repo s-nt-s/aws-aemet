@@ -5,13 +5,15 @@ import time
 from datetime import date, datetime
 from functools import lru_cache
 from statistics import mean, stdev
+import xmltodict
+import json
 
 import bs4
 import requests
 from bunch import Bunch
 
 from .provincias import prov_to_cod
-from .util import mkBunch, safe_number, sexa_to_dec, YEAR
+from .util import mkBunch, safe_number, sexa_to_dec, YEAR, flatten_json
 
 def get_txt(soup, slc):
     n = soup.select_one(slc)
@@ -38,6 +40,7 @@ class Aemet:
         logging.info("requests_verify = " + str(self.requests_verify))
         self.url = mkBunch("aemet.yml")
         self.last_url = None
+        self.last_response = None
 
     @lru_cache(maxsize=None)
     def get_provincias(self):
@@ -69,31 +72,6 @@ class Aemet:
             b["altitud"] = safe_number(b.get("altitud"), label="altitud")
         return bases
 
-    def _meanDict(self, keys, arr, desviacion=None):
-        d = {}
-        vls = {}
-        for k in keys:
-            values = tuple(safe_number(i[k], label=k) for i in arr)
-            values = tuple(i for i in values if i is not None)
-            vls[k] = values
-            if len(values) == 0:
-                d[k] = None
-                continue
-            if k.endswith("min"):
-                d[k] = min(values)
-            elif k.endswith("max"):
-                d[k] = max(values)
-            else:
-                d[k] = mean(values)
-        if desviacion:
-            for k, new_k in desviacion.items():
-                values = vls.get(k)
-                if values is None or len(values) < 2:
-                    d[new_k] = None
-                else:
-                    d[new_k] = stdev(values)
-        return d
-
     def addkey(self, url):
         if self.key in url:
             return url
@@ -107,8 +85,8 @@ class Aemet:
     def _get(self, url, url_debug=None, intentos=0):
         try:
             self.last_url = url_debug or url
-            r = requests.get(url, verify=self.requests_verify)
-            return r
+            self.last_response = requests.get(url, verify=self.requests_verify)
+            return self.last_response
         except Exception as e:
             if intentos < 4:
                 logging.info("sleep:{} en {}".format(
@@ -178,78 +156,59 @@ class Aemet:
             return None
         try:
             soup = bs4.BeautifulSoup(r.text, 'lxml')
-            '''
-            name = url.split("/")[-1]
-            if name.startswith("localidad_"):
-                name = name[:12]+"/"+name[12:]
-            name = self.now.strftime("%Y.%m.%d_%H.%M")+"/"+name
-            name = "fuentes/aemet/prevision/"+name
-            dir = os.path.dirname(name)
-            os.makedirs(dir, exist_ok=True)
-            with open(name, "w") as f:
-                f.write(r.text)
-            '''
         except Exception as e:
             logging.critical("GET "+url+" > "+str(r.text) +
                              " > "+str(e), exc_info=True)
             return None
         return soup
 
-    def get_prediccion_semanal(self, *provincias, key_total=None):
-        if len(provincias) == 0:
-            provincias = self.get_provincias()
-        keys = (
-            "prec_medi",
-            "vien_velm",
-            "vien_rach",
-            "temp_maxi",
-            "temp_mini",
+    def get_prediccion(self, municipio):
+        logging.info("PREDICCION "+municipio)
+        url = self.url.localidad.format(municipio=municipio)
+        xml = self.get_xml(url)
+        if xml is None:
+            return None
+        arr = []
+        elaborado = get_txt(xml, "elaborado")
+        for dia in xml.select("prediccion > dia"):
+            d = {
+                "fecha": dia.attrs["fecha"].strip()
+            }
+            for slc in (
+                "prob_precipitacion",
+                "cota_nieve_prov",
+                "racha_max",
+                "viento velocidad"
+            ):
+                vals = set()
+                for i, n in enumerate(dia.select(slc)):
+                    n = n.get_text()
+                    n = n.strip()
+                    n = safe_number(n, coma=False)
+                    if n is not None:
+                        vals.add(n)
+                        if i == 0:
+                            break
+                v = max(vals) if vals else None
+                d[slc.replace(" ", "_")] = v
+            for slc in (
+                "temperatura maxima",
+                "temperatura minima",
+                "humedad_relativa maxima",
+                "humedad_relativa minima",
+                "estado_cielo",
+                "sens_termica maxima",
+                "sens_termica minima",
+                "uv_max"
+            ):
+                v = get_txt(dia, slc)
+                d[slc.replace(" ", "_")] = safe_number(v, coma=False, nan=v)
+            d = {k:v for k,v in d.items() if v is not None}
+            arr.append(d)
+        return Bunch(
+            elaborado=elaborado,
+            dias=arr
         )
-        desviacion = {"temp_mini": "tmin_vari"}
-        prediccion = {}
-        for provincia in provincias:
-            dt_prov = []
-            for mun in self.get_municipios(provincia):
-                url = self.url.localidad.format(municipio=mun)
-                j = self.get_xml(url)
-                if j is None:
-                    continue
-                dt_mun = []
-                for dia in j.select("prediccion > dia")[:7]:
-                    d = Bunch(
-                        prec_medi=get_txt(dia, "prob_precipitacion"),
-                        vien_velm=get_txt(dia, "viento velocidad"),
-                        vien_rach=get_txt(dia, "racha_max"),
-                        temp_maxi=get_txt(dia, "temperatura maxima"),
-                        temp_mini=get_txt(dia, "temperatura minima"),
-                        hume_maxi=get_txt(dia, "humedad_relativa minima"),
-                        hume_mini=get_txt(dia, "humedad_relativa minima"),
-                        nieve=get_txt(dia, "cota_nieve_prov"),
-                        cielo=get_txt(dia, "estado_cielo"),
-                        stmax=get_txt(dia, "sens_termica minima"),
-                        stmin=get_txt(dia, "sens_termica minima"),
-                        uvmax=get_txt(dia, "uv_max"),
-                    )
-                    d = {k: v for k, v in dict(d).items() if k in keys}
-                    dt_mun.append(d)
-                if len(dt_mun) == 0:
-                    logging.critical("GET "+url+" > "+str(j))
-                    continue
-                dt_prov.append(self._meanDict(
-                    keys, dt_mun, desviacion=desviacion))
-            if len(dt_prov) == 0:
-                logging.debug("get_prediccion_provincia : len(dt_prov)==0")
-                continue
-            if len(dt_prov) == 1:
-                data = dt_prov[0]
-            else:
-                data = self._meanDict(keys, dt_prov, desviacion=desviacion)
-            prediccion[provincia] = data
-        if key_total:
-            data = self._meanDict(keys, prediccion.values())
-            prediccion[key_total] = data
-        prediccion["__timestamp__"] = time.time()
-        return prediccion
 
     def get_dia_estacion(self, id, year, expand=True):
         if year < Aemet.YEAR_ZERO:

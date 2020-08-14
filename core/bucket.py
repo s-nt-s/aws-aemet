@@ -15,7 +15,7 @@ class Bucket:
         self.new_files = []
         self.uploaded = []
 
-    def up_jsgz(self, data, target, commet=None):
+    def up_jsgz(self, data, target, commet=None, overwrite=True):
         if data is None:
             return
         if target.endswith("/"):
@@ -24,6 +24,8 @@ class Bucket:
 
         if not self.exist(target):
             self.new_files.append(target)
+        elif not overwrite:
+            return
         compressed_fp = BytesIO()
         with gzip.GzipFile(fileobj=compressed_fp, mode='w') as gz:
             if not data:

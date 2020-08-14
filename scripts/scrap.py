@@ -81,6 +81,20 @@ class Scrap:
                     commet=self.api.last_url
                 )
 
+    def do_prediccion(self):
+        for prov in self.api.get_provincias():
+            for mun in self.api.get_municipios(prov):
+                data = self.api.get_prediccion(mun)
+                if data.dias:
+                    target = "raw/AEMET/PREDICCION/elaborado={}/provincia={}/municipio={}/".format(data.elaborado, prov, mun)
+                    self.bucket.up_jsgz(
+                        data.dias,
+                        target,
+                        commet=self.api.last_url+"\n\n"+self.api.last_response.text,
+                        overwrite=False
+                    )
+
+
     def update(self):
         uploaded = [i.rsplit("/", 1)[0] for i in self.bucket.uploaded if ".txt." not in i]
         if uploaded:
@@ -93,12 +107,15 @@ if __name__ == "__main__":
     args = mkArg(
         "Scraping de la AEMET",
         mes="Hace scraping de los datos mensuales",
-        dia="Hace scraping de los datos diarios"
+        dia="Hace scraping de los datos diarios",
+        pre="Hace scraping de los datos de prediccion"
     )
     sc = Scrap(Bucket(os.environ['S3_TARGET']), Glue(os.environ['GLUE_TARGET']))
     if args.dia:
         sc.do_dia()
     if args.mes:
         sc.do_mes()
+    if args.pre:
+        sc.do_prediccion()
     if sc.update():
         sc.glue.raise_if_error()
