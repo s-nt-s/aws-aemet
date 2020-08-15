@@ -5,7 +5,6 @@ import time
 from datetime import date, datetime
 from functools import lru_cache
 from statistics import mean, stdev
-import xmltodict
 import json
 
 import bs4
