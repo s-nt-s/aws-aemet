@@ -12,4 +12,5 @@ phases:
       - pip install -r requirements.txt
   post_build:
     commands:
+      - echo "python run.py -v ${ARG}"
       - python run.py -v "${ARG}"
