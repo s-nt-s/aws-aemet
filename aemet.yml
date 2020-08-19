@@ -3,6 +3,10 @@ estaciones: https://opendata.aemet.es/opendata/api/valores/climatologicos/invent
 estacion:
   diario: https://opendata.aemet.es/opendata/api/valores/climatologicos/diarios/datos/fechaini/{ini}-01-01T00:00:00UTC/fechafin/{fin}-12-31T23:59:59UTC/estacion/{id}/?api_key=
   mensual: https://opendata.aemet.es/opendata/api/valores/climatologicos/mensualesanuales/datos/anioini/{ini}/aniofin/{ini}/estacion/{id}/?api_key=
-provincias: https://opendata.aemet.es/centrodedescargas/xml/provincias.xml
-municipios: https://opendata.aemet.es/centrodedescargas/xml/municipios/loc{loc:0>2d}.xml
+provincias:
+  xml: https://opendata.aemet.es/centrodedescargas/xml/provincias.xml
+  html: http://www.aemet.es/es/eltiempo/prediccion/municipios
+municipios:
+  xml: https://opendata.aemet.es/centrodedescargas/xml/municipios/loc{loc:0>2d}.xml
+  html: http://www.aemet.es/es/eltiempo/prediccion/municipios?w=t&p={loc:0>2d}
 localidad: http://www.aemet.es/xml/municipios/localidad_{municipio}.xml

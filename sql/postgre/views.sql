@@ -1,3 +1,4 @@
+DROP MATERIALIZED VIEW IF EXISTS MUN_PREDICCION;
 DROP MATERIALIZED VIEW IF EXISTS PROV_SEMANAS;
 DROP MATERIALIZED VIEW IF EXISTS PROV_DIAS;
 
@@ -80,5 +81,158 @@ CREATE UNIQUE INDEX prov_semanas_pk1
 ON PROV_SEMANAS (provincia, anio, semana);
 CREATE UNIQUE INDEX prov_semanas_pk2
 ON PROV_SEMANAS (provincia, lunes);
+
+CREATE MATERIALIZED VIEW MUN_PREDICCION AS
+select
+	P.municipio,
+	P.fecha,
+	CASE
+		when P.prob_precipitacion is not null then P.prob_precipitacion
+		else (
+			select prob_precipitacion from prediccion where
+			fecha = P.fecha and municipio = P.municipio and
+			prob_precipitacion is not null
+			order by elaborado desc
+			limit 1
+		)
+	end prob_precipitacion,
+	CASE
+		when P.viento_velocidad is not null then P.viento_velocidad
+		else (
+			select viento_velocidad from prediccion where
+			fecha = P.fecha and municipio = P.municipio and
+			viento_velocidad is not null
+			order by elaborado desc
+			limit 1
+		)
+	end viento_velocidad,
+	CASE
+		when P.temperatura_maxima is not null then P.temperatura_maxima
+		else (
+			select temperatura_maxima from prediccion where
+			fecha = P.fecha and municipio = P.municipio and
+			temperatura_maxima is not null
+			order by elaborado desc
+			limit 1
+		)
+	end temperatura_maxima,
+	CASE
+		when P.temperatura_minima is not null then P.temperatura_minima
+		else (
+			select temperatura_minima from prediccion where
+			fecha = P.fecha and municipio = P.municipio and
+			temperatura_minima is not null
+			order by elaborado desc
+			limit 1
+		)
+	end temperatura_minima,
+	CASE
+		when P.humedad_relativa_maxima is not null then P.humedad_relativa_maxima
+		else (
+			select humedad_relativa_maxima from prediccion where
+			fecha = P.fecha and municipio = P.municipio and
+			humedad_relativa_maxima is not null
+			order by elaborado desc
+			limit 1
+		)
+	end humedad_relativa_maxima,
+	CASE
+		when P.humedad_relativa_minima is not null then P.humedad_relativa_minima
+		else (
+			select humedad_relativa_minima from prediccion where
+			fecha = P.fecha and municipio = P.municipio and
+			humedad_relativa_minima is not null
+			order by elaborado desc
+			limit 1
+		)
+	end humedad_relativa_minima,
+	CASE
+		when P.estado_cielo is not null then P.estado_cielo
+		else (
+			select estado_cielo from prediccion where
+			fecha = P.fecha and municipio = P.municipio and
+			estado_cielo is not null
+			order by elaborado desc
+			limit 1
+		)
+	end estado_cielo,
+	CASE
+		when P.sens_termica_maxima is not null then P.sens_termica_maxima
+		else (
+			select sens_termica_maxima from prediccion where
+			fecha = P.fecha and municipio = P.municipio and
+			sens_termica_maxima is not null
+			order by elaborado desc
+			limit 1
+		)
+	end sens_termica_maxima,
+	CASE
+		when P.sens_termica_minima is not null then P.sens_termica_minima
+		else (
+			select sens_termica_minima from prediccion where
+			fecha = P.fecha and municipio = P.municipio and
+			sens_termica_minima is not null
+			order by elaborado desc
+			limit 1
+		)
+	end sens_termica_minima,
+	CASE
+		when P.racha_max is not null then P.racha_max
+		else (
+			select racha_max from prediccion where
+			fecha = P.fecha and municipio = P.municipio and
+			racha_max is not null
+			order by elaborado desc
+			limit 1
+		)
+	end racha_max,
+	CASE
+		when P.uv_max is not null then P.uv_max
+		else (
+			select uv_max from prediccion where
+			fecha = P.fecha and municipio = P.municipio and
+			uv_max is not null
+			order by elaborado desc
+			limit 1
+		)
+	end uv_max,
+	CASE
+		when P.cota_nieve_prov is not null then P.cota_nieve_prov
+		else (
+			select cota_nieve_prov from prediccion where
+			fecha = P.fecha and municipio = P.municipio and
+			cota_nieve_prov is not null
+			order by elaborado desc
+			limit 1
+		)
+	end cota_nieve_prov
+from prediccion P
+where (elaborado, municipio, fecha) in (
+select
+	max(T.elaborado) elaborado, T.municipio, T.fecha
+from
+	prediccion T
+where
+	T.fecha>=current_date and (
+		T.prob_precipitacion is not null or
+		T.viento_velocidad is not null or
+		T.temperatura_maxima is not null or
+		T.temperatura_minima is not null or
+		T.humedad_relativa_maxima is not null or
+		T.humedad_relativa_minima is not null or
+		T.estado_cielo is not null or
+		T.sens_termica_maxima is not null or
+		T.sens_termica_minima is not null or
+		T.racha_max is not null or
+		T.uv_max is not null or
+		T.cota_nieve_prov is not null
+	)
+group by
+	T.municipio, T.fecha
+)
+;
+
+CREATE UNIQUE INDEX mun_prediccion_pk
+ON MUN_PREDICCION (municipio, fecha);
 
 commit;

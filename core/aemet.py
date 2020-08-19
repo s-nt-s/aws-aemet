@@ -42,23 +42,36 @@ class Aemet:
         self.last_response = None
 
     @lru_cache(maxsize=None)
-    def get_provincias(self):
-        j = self.get_xml(self.url.provincias)
-        provincias = set(i.get_text().strip()
-                         for i in j.select("provincia id"))
-        return tuple(sorted(i for i in provincias if i != ""))
+    def get_provincias(self, source="html"):
+        if source=="html":
+            j = self.get_xml(self.url.provincias.html)
+            provincias = set(i.attrs.get("value") for i in j.select("#provincia_selector option"))
+        elif source == "xml":
+            j = self.get_xml(self.url.provincias.xml)
+            provincias = set(i.get_text().strip()
+                             for i in j.select("provincia id"))
+        return tuple(sorted(i for i in provincias if i not in ("", None)))
 
     @lru_cache(maxsize=None)
-    def get_municipios(self, provincia):
-        url = self.url.municipios.format(loc=int(provincia))
-        r = self._get(url)
-        if r is None:
-            return None
-        provs = re.findall(r"<ID>\s*id(.+?)\s*</ID>",
-                           r.text, flags=re.IGNORECASE)
-        if len(provs) == 0:
-            logging.critical("GET "+url+" > "+str(r.text))
-        return tuple(sorted(set(provs)))
+    def get_municipios(self, provincia, source="html"):
+        if source=="html":
+            url = self.url.municipios.html.format(loc=int(provincia))
+            r = self.get_xml(url)
+            muns = set()
+            for i in r.select("#localidades_selector option"):
+                i = i.attrs.get("value")
+                if i is not None and "-id" in i:
+                    muns.add(i[-5:])
+        elif source == "xml":
+            url = self.url.municipios.xml.format(loc=int(provincia))
+            r = self._get(url)
+            if r is None:
+                return None
+            muns = re.findall(r"<ID>\s*id(.+?)\s*</ID>",
+                               r.text, flags=re.IGNORECASE)
+        if len(muns) == 0:
+            logging.critical("GET "+url+" > "+str(self.last_response.text))
+        return tuple(sorted(set(muns)))
 
     @property
     @lru_cache(maxsize=None)
