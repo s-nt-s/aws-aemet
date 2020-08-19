@@ -2,6 +2,7 @@ DROP MATERIALIZED VIEW IF EXISTS MUN_PREDICCION;
 DROP MATERIALIZED VIEW IF EXISTS PROV_SEMANAS;
 DROP MATERIALIZED VIEW IF EXISTS PROV_DIAS;
 
+-- Agrupa por provincia valores de las bases
 CREATE MATERIALIZED VIEW PROV_DIAS AS
 select
   PD.provincia,
@@ -51,6 +52,7 @@ on PD.provincia=PM.provincia and PM.fecha=date_trunc('month', PD.fecha)
 CREATE UNIQUE INDEX prov_dias_pk
 ON PROV_DIAS (provincia, fecha);
 
+-- Agrupa por semana valores de las provincias
 CREATE MATERIALIZED VIEW PROV_SEMANAS AS
 select
   provincia,
@@ -82,6 +84,14 @@ ON PROV_SEMANAS (provincia, anio, semana);
 CREATE UNIQUE INDEX prov_semanas_pk2
 ON PROV_SEMANAS (provincia, lunes);
 
+-- Prediccion de los proximos dias donde para cada
+-- municipio, fecha y valor se usa el ultimo elaborado
+-- que no es null.
+-- Con esto se busca que si en la prediccion elaborada
+-- el martes no viene la racha de viento del miercoles
+-- pero si venia en la predicion elaborada el lunes
+-- se use el ultimo dato disponible (el elaborado el lunes)
+-- en vez de dejarlo a null
 CREATE MATERIALIZED VIEW MUN_PREDICCION AS
 select
 	P.municipio,
