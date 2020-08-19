@@ -22,10 +22,10 @@ class Update:
                 years.append(y)
         return tuple(years)
 
-    def copy(self, sql, table, key=None):
+    def copy(self, sql, *args, **kargv):
         self.athena.query(sql)
         output = self.athena.wait()
-        self.db.copy(output, table, key=key)
+        self.db.copy(output, *args, **kargv)
         self.bucket.delete(output.split("/", 3)[-1])
 
     def do_bases(self):
@@ -48,12 +48,32 @@ class Update:
             sql = sql.rstrip() + " and\n  "+Athena.gWhere("year", years)
         self.copy(sql, "meses", key="base, fecha")
 
+    def do_prediccion(self):
+        done = list()
+        sql = read_file("sql/athena/prediccion.sql").strip()
+        min_ela = self.db.one('''
+            select elaborado from (
+                select
+                    cast(elaborado as date) elaborado, count(*)
+                from
+                    prediccion
+                group by
+                    cast(elaborado as date)
+                order by
+                    count(*) desc, cast(elaborado as date) desc
+            ) T
+        ''')
+        if min_ela is not None:
+            sql = sql + " and\n  elaborado>'{:%Y-%m-%dT00:00:00}'".format(min_ela)
+        self.copy(sql,  "prediccion", key="elaborado, municipio, fecha" , overwrite=False)
+
 
 if __name__ == "__main__":
     args = mkArg(
         "Actualiza la base de datos",
         mes="Actualiza los datos mensuales",
-        dia="Actualiza los datos diarios"
+        dia="Actualiza los datos diarios",
+        pre="Actualiza los datos de prediccion"
     )
 
     up = Update(
@@ -62,10 +82,13 @@ if __name__ == "__main__":
         Athena(os.environ['ATHENA_TARGET'], "s3://{}/tmp/".format(os.environ['S3_TARGET']))
     )
 
-    up.do_bases()
+    if args.dia or args.mes:
+        up.do_bases()
     if args.dia:
         up.do_dia()
     if args.mes:
         up.do_mes()
+    if args.pre:
+        up.do_prediccion()
 
     up.db.close()

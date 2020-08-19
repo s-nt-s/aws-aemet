@@ -41,7 +41,7 @@ class DB:
             self.con.commit()
         c.close()
 
-    def copy(self, url, table, key=None, delimiter=","):
+    def copy(self, url, table, key=None, delimiter=",", overwrite=True):
         logging.info("COPY in {} from {}".format(table, url))
         obj = None
         s3 = boto3.client('s3')
@@ -69,14 +69,23 @@ class DB:
                 delimiter
             ), file=obj['Body'])
             if key:
-                c.execute("SET CONSTRAINTS ALL DEFERRED")
-                c.execute('''
-                    delete from {0}
-                    where ({1}) in (
-                        select {1}
-                        from tmp_{0}
-                    );
-                '''.format(table, key))
+                if overwrite:
+                    c.execute("SET CONSTRAINTS ALL DEFERRED")
+                    c.execute('''
+                        delete from {0}
+                        where ({1}) in (
+                            select {1}
+                            from tmp_{0}
+                        );
+                    '''.format(table, key))
+                else:
+                    c.execute('''
+                        delete from tmp_{0}
+                        where ({1}) in (
+                            select {1}
+                            from {0}
+                        );
+                    '''.format(table, key))
                 c.execute('''
                     insert  into {0}
                     select  *

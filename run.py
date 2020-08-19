@@ -17,10 +17,11 @@ import logging
 args = mkArg(
     "Scraping de la AEMET y actualización de la base de datos",
     mes="Trata los datos mensuales",
-    dia="Trata los datos diarios"
+    dia="Trata los datos diarios",
+    pre="Trata los datos de prediccion"
 )
 
-if not(args.mes or args.dia):
+if not(args.mes or args.dia or args.pre):
     sys.exit("No se ha pasado ningun parametro")
 
 bucket = Bucket(os.environ['S3_TARGET'])
@@ -31,8 +32,10 @@ if args.dia:
     sc.do_dia()
 if args.mes:
     sc.do_mes()
+if args.pre:
+    sc.do_prediccion()
 
-if not args.dia:
+if not (args.dia or args.pre):
     logging.info("Se actualizara la base de datos mas tarde, cuando se traten los datos diarios")
     sys.exit()
 
@@ -47,12 +50,18 @@ up = Update(
     bucket,
     Athena(os.environ['ATHENA_TARGET'], "s3://{}/tmp/".format(os.environ['S3_TARGET']))
 )
-up.do_bases()
+if args.dia or args.mes:
+    up.do_bases()
+
 if args.dia:
     up.do_dia()
 if args.mes:
     up.do_mes()
 
-up.db.refresh("PROV_DIAS", "PROV_SEMANAS")
+if args.dia or args.mes:
+    up.db.refresh("PROV_DIAS", "PROV_SEMANAS")
+
+if args.pre:
+    up.do_prediccion()
 
 up.db.close()

@@ -3,6 +3,7 @@
 DROP TABLE IF EXISTS public.meses;
 DROP TABLE IF EXISTS public.dias;
 DROP TABLE IF EXISTS public.bases;
+DROP TABLE IF EXISTS public.prediccion;
 
 CREATE TABLE public.bases (
   id varchar NOT NULL,
@@ -16,8 +17,6 @@ CREATE TABLE public.bases (
 );
 COMMENT ON TABLE public.bases IS 'Bases de la AEMET';
 COMMENT ON COLUMN public.bases.id IS 'indicativo';
-
--- DROP TABLE public.dias;
 
 CREATE TABLE public.dias (
   base varchar NOT NULL,
@@ -156,5 +155,40 @@ COMMENT ON COLUMN public.meses.ts_min IS 'Temperatura (grados Celsius) mínima m
 COMMENT ON COLUMN public.meses.w_med IS 'Velocidad media en km/h elaborada a partir de las observaciones de 07, 13 y 18 UTC';
 -- COMMENT ON COLUMN public.meses.w_racha IS 'Dirección en decenas de grado, velocidad en m/sg y fecha de la racha máxima';
 COMMENT ON COLUMN public.meses.w_rec IS 'Recorrido medio diario (de 07 a 07 UTC) en Km';
+
+CREATE TABLE public.prediccion (
+  elaborado timestamp,
+  fecha date,
+  municipio varchar(5),
+  prob_precipitacion int4 NULL,
+  viento_velocidad int4 NULL,
+  temperatura_maxima int4 NULL,
+  temperatura_minima int4 NULL,
+  humedad_relativa_maxima int4 NULL,
+  humedad_relativa_minima int4 NULL,
+  estado_cielo int4 NULL,
+  sens_termica_maxima int4 NULL,
+  sens_termica_minima int4 NULL,
+  racha_max int4 NULL,
+  uv_max int4 NULL,
+  cota_nieve_prov int4 NULL,
+  CONSTRAINT prediccion_pk PRIMARY KEY (elaborado, fecha, municipio)
+);
+
+COMMENT ON COLUMN public.prediccion.elaborado IS 'Fecha y hora de elaboración';
+COMMENT ON COLUMN public.prediccion.fecha IS 'Período de validez de la predicción';
+COMMENT ON COLUMN public.prediccion.municipio IS 'ID del municipio';
+COMMENT ON COLUMN public.prediccion.prob_precipitacion IS 'Probabilidad de precipitación (%)';
+COMMENT ON COLUMN public.prediccion.viento_velocidad IS 'Velocidad del viento (km/h)';
+COMMENT ON COLUMN public.prediccion.temperatura_maxima IS 'Temperatura máxima (grados Celsius)';
+COMMENT ON COLUMN public.prediccion.temperatura_minima IS 'Temperatura mínima (grados Celsius)';
+COMMENT ON COLUMN public.prediccion.humedad_relativa_maxima IS 'Humedad relativa máxima (%)';
+COMMENT ON COLUMN public.prediccion.humedad_relativa_minima IS 'Humedad relativa mínima (%)';
+COMMENT ON COLUMN public.prediccion.estado_cielo IS 'Código del estado del Cielo';
+COMMENT ON COLUMN public.prediccion.sens_termica_maxima IS 'Sensación térmica máxima (grados Celsius)';
+COMMENT ON COLUMN public.prediccion.sens_termica_minima IS 'Sensación térmica mínima (grados Celsius)';
+COMMENT ON COLUMN public.prediccion.racha_max IS 'Racha máxima (km/h)';
+COMMENT ON COLUMN public.prediccion.uv_max IS 'Índice ultravioleta máximo';
+COMMENT ON COLUMN public.prediccion.cota_nieve_prov IS 'Cota de nieve (metros)';
 
 commit;
