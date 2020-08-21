@@ -1,3 +1,9 @@
+DROP INDEX IF exists prov_dias_pk;
+DROP INDEX IF exists mun_prediccion_pk;
+DROP INDEX IF exists mun_prediccion_prov;
+DROP INDEX IF exists prov_semanas_pk1;
+DROP INDEX IF exists prov_semanas_pk2;
+DROP VIEW IF EXISTS PROV_PREDICCION;
 DROP MATERIALIZED VIEW IF EXISTS MUN_PREDICCION;
 DROP MATERIALIZED VIEW IF EXISTS PROV_SEMANAS;
 DROP MATERIALIZED VIEW IF EXISTS PROV_DIAS;
@@ -94,6 +100,7 @@ ON PROV_SEMANAS (provincia, lunes);
 -- en vez de dejarlo a null
 CREATE MATERIALIZED VIEW MUN_PREDICCION AS
 select
+  substring(P.municipio, 1, 2) provincia,
 	P.municipio,
 	P.fecha,
 	CASE
@@ -244,5 +251,54 @@ group by
 
 CREATE UNIQUE INDEX mun_prediccion_pk
 ON MUN_PREDICCION (municipio, fecha);
+
+CREATE INDEX mun_prediccion_prov
+ON MUN_PREDICCION (provincia);
+
+CREATE VIEW PROV_PREDICCION AS
+select
+  provincia,
+  fecha,
+	avg(prob_precipitacion) prob_precipitacion,
+	avg(viento_velocidad) viento_velocidad,
+	max(temperatura_maxima) temperatura_maxima,
+	min(temperatura_minima) temperatura_minima,
+	max(humedad_relativa_maxima) humedad_relativa_maxima,
+	min(humedad_relativa_minima) humedad_relativa_minima,
+	max(sens_termica_maxima) sens_termica_maxima,
+	min(sens_termica_minima) sens_termica_minima,
+	max(racha_max) racha_max,
+	max(uv_max) uv_max,
+	max(cota_nieve_prov) cota_nieve_prov
+from
+  MUN_PREDICCION
+where
+  fecha>=current_date
+group by
+  provincia, fecha
+;
+
+CREATE VIEW PROV_SEMANA_PREDICCION AS
+select
+  provincia,
+	avg(prob_precipitacion) prob_precipitacion,
+	avg(viento_velocidad) viento_velocidad,
+	max(temperatura_maxima) temperatura_maxima,
+	min(temperatura_minima) temperatura_minima,
+	max(humedad_relativa_maxima) humedad_relativa_maxima,
+	min(humedad_relativa_minima) humedad_relativa_minima,
+	max(sens_termica_maxima) sens_termica_maxima,
+	min(sens_termica_minima) sens_termica_minima,
+	max(racha_max) racha_max,
+	max(uv_max) uv_max,
+	max(cota_nieve_prov) cota_nieve_prov,
+  STDDEV_POP(temperatura_minima) tmin_desviacion
+from
+  PROV_PREDICCION
+where
+  fecha>=current_date and fecha<(current_date + interval '7' day)
+group by
+  provincia, fecha
+;
 
 commit;

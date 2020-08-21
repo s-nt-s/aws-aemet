@@ -63,6 +63,6 @@ if args.dia or args.mes:
 
 if args.pre:
     up.do_prediccion()
-    up.db.refresh("MUN_PREDICCION")
+    #up.db.refresh("MUN_PREDICCION")
 
 up.db.close()
