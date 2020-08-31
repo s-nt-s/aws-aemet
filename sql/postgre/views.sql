@@ -1,16 +1,16 @@
-DROP INDEX IF exists prov_dias_pk;
-DROP INDEX IF exists mun_prediccion_pk;
-DROP INDEX IF exists mun_prediccion_prov;
-DROP INDEX IF exists prov_semanas_pk1;
-DROP INDEX IF exists prov_semanas_pk2;
-drop view IF exists PROV_SEMANA_PREDICCION;
-DROP VIEW IF EXISTS PROV_PREDICCION;
-DROP MATERIALIZED VIEW IF EXISTS MUN_PREDICCION;
-DROP MATERIALIZED VIEW IF EXISTS PROV_SEMANAS;
-DROP MATERIALIZED VIEW IF EXISTS PROV_DIAS;
+DROP INDEX IF exists aemet.prov_dias_pk;
+DROP INDEX IF exists aemet.mun_prediccion_pk;
+DROP INDEX IF exists aemet.mun_prediccion_prov;
+DROP INDEX IF exists aemet.prov_semanas_pk1;
+DROP INDEX IF exists aemet.prov_semanas_pk2;
+drop VIEW IF exists aemet.PROV_SEMANA_PREDICCION;
+DROP VIEW IF EXISTS aemet.PROV_PREDICCION;
+DROP MATERIALIZED VIEW IF EXISTS aemet.MUN_PREDICCION;
+DROP MATERIALIZED VIEW IF EXISTS aemet.PROV_SEMANAS;
+DROP MATERIALIZED VIEW IF EXISTS aemet.PROV_DIAS;
 
 -- Agrupa por provincia valores de las bases
-CREATE MATERIALIZED VIEW PROV_DIAS AS
+CREATE MATERIALIZED VIEW aemet.PROV_DIAS AS
 select
   PD.provincia,
   PD.fecha,
@@ -40,7 +40,7 @@ from
     avg(tmed) tmed,
     min(tmin) tmin,
     avg(velmedia) velmedia
-  from dias D join bases B on D.base = B.id
+  from aemet.dias D join aemet.bases B on D.base = B.id
   group by B.provincia, D.fecha
 ) PD
 left join
@@ -51,16 +51,16 @@ left join
     avg(e) e,
     avg(hr) hr,
     avg(q_mar) q_mar
-  from meses M join bases B on M.base = B.id
+  from aemet.meses M join aemet.bases B on M.base = B.id
   group by B.provincia, M.FECHA
 ) PM
 on PD.provincia=PM.provincia and PM.fecha=date_trunc('month', PD.fecha)
 ;
-CREATE UNIQUE INDEX prov_dias_pk
-ON PROV_DIAS (provincia, fecha);
+CREATE UNIQUE INDEX aemet.prov_dias_pk
+ON aemet.PROV_DIAS (provincia, fecha);
 
 -- Agrupa por semana valores de las provincias
-CREATE MATERIALIZED VIEW PROV_SEMANAS AS
+CREATE MATERIALIZED VIEW aemet.PROV_SEMANAS AS
 select
   provincia,
   EXTRACT(ISOYEAR FROM fecha) anio,
@@ -82,14 +82,14 @@ select
   STDDEV_POP(tmax) tmax_desviacion,
   STDDEV_POP(tmin) tmin_desviacion
 from
-  PROV_DIAS
+  aemet.PROV_DIAS
 group by
   provincia, EXTRACT(ISOYEAR FROM fecha), EXTRACT(week FROM fecha), TO_DATE(TO_CHAR(fecha, 'IYYYIW'), 'IYYYIW')
 ;
-CREATE UNIQUE INDEX prov_semanas_pk1
-ON PROV_SEMANAS (provincia, anio, semana);
-CREATE UNIQUE INDEX prov_semanas_pk2
-ON PROV_SEMANAS (provincia, lunes);
+CREATE UNIQUE INDEX aemet.prov_semanas_pk1
+ON aemet.PROV_SEMANAS (provincia, anio, semana);
+CREATE UNIQUE INDEX aemet.prov_semanas_pk2
+ON aemet.PROV_SEMANAS (provincia, lunes);
 
 -- Prediccion de los proximos dias donde para cada
 -- municipio, fecha y valor se usa el ultimo elaborado
@@ -99,7 +99,7 @@ ON PROV_SEMANAS (provincia, lunes);
 -- pero si venia en la predicion elaborada el lunes
 -- se use el ultimo dato disponible (el elaborado el lunes)
 -- en vez de dejarlo a null
-CREATE MATERIALIZED VIEW MUN_PREDICCION AS
+CREATE MATERIALIZED VIEW aemet.MUN_PREDICCION AS
 select
   substring(p.municipio, 1, 2) provincia,
   p.municipio,
@@ -117,7 +117,7 @@ select
   (ARRAY_AGG(p.uv_max) FILTER (WHERE p.uv_max IS NOT NULL))[1] uv_max,
   (ARRAY_AGG(p.cota_nieve_prov) FILTER (WHERE p.cota_nieve_prov IS NOT NULL))[1] cota_nieve_prov
 from (
-	select * from prediccion T
+	select * from aemet.prediccion T
   where
   	T.fecha>=current_date and (
   		T.prob_precipitacion is not null or
@@ -139,13 +139,13 @@ group by
   p.municipio, p.fecha
 ;
 
-CREATE UNIQUE INDEX mun_prediccion_pk
-ON MUN_PREDICCION (municipio, fecha);
+CREATE UNIQUE INDEX aemet.mun_prediccion_pk
+ON aemet.MUN_PREDICCION (municipio, fecha);
 
-CREATE INDEX mun_prediccion_prov
-ON MUN_PREDICCION (provincia);
+CREATE INDEX aemet.mun_prediccion_prov
+ON aemet.MUN_PREDICCION (provincia);
 
-CREATE VIEW PROV_PREDICCION AS
+CREATE VIEW aemet.PROV_PREDICCION AS
 select
   provincia,
   fecha,
@@ -161,14 +161,14 @@ select
 	max(uv_max) uv_max,
 	max(cota_nieve_prov) cota_nieve_prov
 from
-  MUN_PREDICCION
+  aemet.MUN_PREDICCION
 where
   fecha>=current_date
 group by
   provincia, fecha
 ;
 
-CREATE VIEW PROV_SEMANA_PREDICCION AS
+CREATE VIEW aemet.PROV_SEMANA_PREDICCION AS
 select
   provincia,
 	avg(prob_precipitacion) prob_precipitacion,
@@ -184,7 +184,7 @@ select
 	max(cota_nieve_prov) cota_nieve_prov,
   STDDEV_POP(temperatura_minima) tmin_desviacion
 from
-  PROV_PREDICCION
+  aemet.PROV_PREDICCION
 where
   fecha>=current_date and fecha<(current_date + interval '7' day)
 group by

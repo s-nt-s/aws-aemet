@@ -5,10 +5,11 @@ import logging
 
 
 class DB:
-    def __init__(self, config):
+    def __init__(self, config, schema=None):
         host, db, user, psw = config.split()
         self.con = psycopg2.connect(
             host=host, database=db, user=user, password=psw)
+        self.schema = None
 
     def close(self):
         self.con.commit()
@@ -30,18 +31,25 @@ class DB:
         c.close()
         return r
 
+    def _table(self, s):
+        if not self.schema or "." in s:
+            return s
+        return self.schema+"."+s
+
     def version(self):
         return self.one("SELECT version()")
 
     def refresh(self, *tables):
         c = self.con.cursor()
         for table in tables:
+            table = self._table(table)
             logging.info("REFRESH MATERIALIZED VIEW "+table)
             c.execute("REFRESH MATERIALIZED VIEW "+table)
             self.con.commit()
         c.close()
 
     def copy(self, url, table, key=None, delimiter=",", overwrite=True):
+        table = self._table(table)
         logging.info("COPY in {} from {}".format(table, url))
         obj = None
         s3 = boto3.client('s3')
@@ -56,7 +64,7 @@ class DB:
             c = self.con.cursor()
             if key:
                 c.execute('''
-                    CREATE TEMP TABLE tmp_{0}
+                    CREATE TEMP TABLE {0}_TMP
                     ON COMMIT DROP
                     AS
                     SELECT * FROM {0}
@@ -65,7 +73,7 @@ class DB:
             c.copy_expert(sql='''
                 COPY {} FROM stdin WITH CSV HEADER DELIMITER as '{}'
             '''.format(
-                ("tmp_"+table) if key else table,
+                (table+"_TMP") if key else table,
                 delimiter
             ), file=obj['Body'])
             if key:
@@ -75,12 +83,12 @@ class DB:
                         delete from {0}
                         where ({1}) in (
                             select {1}
-                            from tmp_{0}
+                            from {0}_TMP
                         );
                     '''.format(table, key))
                 else:
                     c.execute('''
-                        delete from tmp_{0}
+                        delete from {0}_TMP
                         where ({1}) in (
                             select {1}
                             from {0}
@@ -89,7 +97,7 @@ class DB:
                 c.execute('''
                     insert  into {0}
                     select  *
-                    from    tmp_{0};
+                    from    {0}_TMP;
                 '''.format(table))
             self.con.commit()
             c.close()

@@ -77,7 +77,7 @@ if __name__ == "__main__":
     )
 
     up = Update(
-        DB(os.environ['DB_TARGET']),
+        DB(os.environ['DB_TARGET'], schema="aemet"),
         Bucket(os.environ['S3_TARGET']),
         Athena(os.environ['ATHENA_TARGET'], "s3://{}/tmp/".format(os.environ['S3_TARGET']))
     )

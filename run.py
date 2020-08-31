@@ -46,7 +46,7 @@ if not sc.update():
 sc.glue.raise_if_error()
 
 up = Update(
-    DB(os.environ['DB_TARGET']),
+    DB(os.environ['DB_TARGET'], schema="aemet"),
     bucket,
     Athena(os.environ['ATHENA_TARGET'], "s3://{}/tmp/".format(os.environ['S3_TARGET']))
 )
