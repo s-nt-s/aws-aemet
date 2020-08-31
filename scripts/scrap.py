@@ -108,7 +108,8 @@ if __name__ == "__main__":
         "Scraping de la AEMET",
         mes="Hace scraping de los datos mensuales",
         dia="Hace scraping de los datos diarios",
-        pre="Hace scraping de los datos de prediccion"
+        pre="Hace scraping de los datos de prediccion",
+        glue="Ejecutar Glue"
     )
     sc = Scrap(Bucket(os.environ['S3_TARGET']), Glue(os.environ['GLUE_TARGET']))
     if args.dia:
@@ -117,5 +118,5 @@ if __name__ == "__main__":
         sc.do_mes()
     if args.pre:
         sc.do_prediccion()
-    if sc.update():
+    if args.glue and sc.update():
         sc.glue.raise_if_error()

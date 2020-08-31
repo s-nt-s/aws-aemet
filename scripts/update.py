@@ -73,7 +73,8 @@ if __name__ == "__main__":
         "Actualiza la base de datos",
         mes="Actualiza los datos mensuales",
         dia="Actualiza los datos diarios",
-        pre="Actualiza los datos de prediccion"
+        pre="Actualiza los datos de prediccion",
+        glue="Ejecutar Glue"
     )
 
     up = Update(
@@ -81,6 +82,11 @@ if __name__ == "__main__":
         Bucket(os.environ['S3_TARGET']),
         Athena(os.environ['ATHENA_TARGET'], "s3://{}/tmp/".format(os.environ['S3_TARGET']))
     )
+
+    if args.glue:
+        glue = Glue(os.environ['GLUE_TARGET'])
+        glue.start()
+        glue.raise_if_error()
 
     if args.dia or args.mes:
         up.do_bases()
