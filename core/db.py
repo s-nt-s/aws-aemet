@@ -50,6 +50,7 @@ class DB:
 
     def copy(self, url, table, key=None, delimiter=",", overwrite=True):
         table = self._table(table)
+        tmp_table = "tmp_"+table.replace(".", "_")
         logging.info("COPY in {} from {}".format(table, url))
         obj = None
         s3 = boto3.client('s3')
@@ -64,16 +65,16 @@ class DB:
             c = self.con.cursor()
             if key:
                 c.execute('''
-                    CREATE TEMP TABLE {0}_TMP
+                    CREATE TEMP TABLE {1}
                     ON COMMIT DROP
                     AS
                     SELECT * FROM {0}
                     WITH NO DATA;
-                '''.format(table))
+                '''.format(table, tmp_table))
             c.copy_expert(sql='''
                 COPY {} FROM stdin WITH CSV HEADER DELIMITER as '{}'
             '''.format(
-                (table+"_TMP") if key else table,
+                tmp_table if key else table,
                 delimiter
             ), file=obj['Body'])
             if key:
@@ -83,22 +84,22 @@ class DB:
                         delete from {0}
                         where ({1}) in (
                             select {1}
-                            from {0}_TMP
+                            from {2}
                         );
-                    '''.format(table, key))
+                    '''.format(table, key, tmp_table))
                 else:
                     c.execute('''
-                        delete from {0}_TMP
+                        delete from {2}
                         where ({1}) in (
                             select {1}
                             from {0}
                         );
-                    '''.format(table, key))
+                    '''.format(table, key, tmp_table))
                 c.execute('''
                     insert  into {0}
                     select  *
-                    from    {0}_TMP;
-                '''.format(table))
+                    from    {1};
+                '''.format(table, tmp_table))
             self.con.commit()
             c.close()
         except Exception as e:
