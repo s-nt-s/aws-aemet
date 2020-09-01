@@ -10,6 +10,9 @@ class DB:
         self.con = psycopg2.connect(
             host=host, database=db, user=user, password=psw)
         self.schema = schema
+        if schema:
+            db = db + "." + schema
+        logging.info("{} conectada en {}".format(db, host))
 
     def close(self):
         self.con.commit()
