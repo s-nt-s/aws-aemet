@@ -9,7 +9,7 @@ class DB:
         host, db, user, psw = config.split()
         self.con = psycopg2.connect(
             host=host, database=db, user=user, password=psw)
-        self.schema = None
+        self.schema = schema
 
     def close(self):
         self.con.commit()

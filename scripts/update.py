@@ -56,7 +56,7 @@ class Update:
                 select
                     cast(elaborado as date) elaborado, count(*)
                 from
-                    prediccion
+                    aemet.prediccion
                 group by
                     cast(elaborado as date)
                 order by
