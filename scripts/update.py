@@ -33,7 +33,7 @@ class Update:
         self.copy(sql, "bases", key="id")
 
     def do_dia(self):
-        years = self.get_years("select distinct EXTRACT(year FROM fecha) from dias")
+        years = self.get_years("select distinct EXTRACT(year FROM fecha) from aemet.dias")
         sql = read_file("sql/athena/dia.sql").strip()
         if years != tuple(range(Aemet.YEAR_ZERO, YEAR+1)):
             years = [str(y) for y in years]
@@ -41,7 +41,7 @@ class Update:
         self.copy(sql,  "dias", key="base, fecha")
 
     def do_mes(self):
-        years = self.get_years("select distinct EXTRACT(year FROM fecha) from meses")
+        years = self.get_years("select distinct EXTRACT(year FROM fecha) from aemet.meses")
         sql = read_file("sql/athena/mes.sql").strip()
         if years != tuple(range(Aemet.YEAR_ZERO, YEAR+1)):
             years = [str(y) for y in years]
