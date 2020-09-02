@@ -47,8 +47,8 @@ a RDS PostgreSQL ([buildspec/update.yml](buildspec/update.yml))
 
 * Regla `15 4 * * ? *` para la predicción diaria
 * Regla `30 4 * * ? *` para el histórico diario
-* Regla ` 0 0 3 * ? *` para el histórico mensual
-* Regla ` 0 5 * * ? *` para Glue
+* Regla `00 0 3 * ? *` para el histórico mensual
+* Regla `00 5 * * ? *` para Glue
 
 Las reglas `cron` usan la hora GMT, así que suponiendo que estamos en
 el horario central europea de verano (CEST o UTC+02:00) esto significa
