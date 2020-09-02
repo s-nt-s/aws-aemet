@@ -25,7 +25,7 @@ class Scrap:
     def bases(self):
         if not self.api.bases:
             raise Exception("Bases no encontradas")
-        self.bucket.up_jsgz(self.api.bases, "raw/AEMET/BASES/", commet=self.api.last_url)
+        self.bucket.up_gz(self.api.bases, "raw/AEMET/BASES/", commet=self.api.last_url)
         return self.api.bases
 
     def get_years(self, table, base):
@@ -56,7 +56,7 @@ class Scrap:
                             if len(dias) == 0:
                                 target = "raw/AEMET/DIA/base={}/year={}.txt".format(
                                     b['indicativo'], year)
-                            self.bucket.up_jsgz(
+                            self.bucket.up_gz(
                                 dias,
                                 target,
                                 commet=self.api.last_url
@@ -76,7 +76,7 @@ class Scrap:
                 if len(meses) == 0:
                     target = "raw/AEMET/MES/base={}/year={}.txt".format(
                         b['indicativo'], year)
-                self.bucket.up_jsgz(
+                self.bucket.up_gz(
                     meses,
                     target,
                     commet=self.api.last_url
@@ -95,22 +95,41 @@ class Scrap:
             if data.dias:
                 return prov, data
 
+        prov_data={}
+        elaborados=set()
         for prov, data in tm.run(do_work, self.loop_prediccion()):
-            target = "raw/AEMET/PREDICCION/elaborado={}/provincia={}/municipio={}/".format(data.elaborado, prov, data.municipio)
-            self.bucket.up_jsgz(
-                data.dias,
-                target,
-                commet=data.url+"\n\n"+str(data.xml),
-                overwrite=False
+            key = (prov, data.elaborado)
+            if prov not in prov_data:
+                prov_data[key]=[]
+            prov_data[key].append(data)
+
+        for (prov, elaborado), datas in prov_data.items():
+            prov_target = "raw/AEMET/PREDICCION/elaborado={}/provincia={}/".format(elaborado, prov)
+            dias = []
+            for data in datas:
+                for dia in data.dias:
+                    dia = {**{"municipio":data.municipio}, **dia}
+                    dias.append(dia)
+            dias = sorted(dias, key=lambda d:(d["municipio"], d["fecha"]))
+            self.bucket.up_gz(
+                dias,
+                prov_target
             )
+            for data in datas:
+                target = prov_target + data.municipio + ".xml"
+                self.bucket.up_gz(
+                    data.source.rstrip()+"\n<!-- "+data.url+" -->",
+                    target,
+                    overwrite=False
+                )
 
     def update(self):
-        uploaded = [i.rsplit("/", 1)[0] for i in self.bucket.uploaded if ".txt." not in i]
-        if uploaded:
-            logging.info("{} ficheros actualizados".format(len(uploaded)))
-            self.glue.start()  # *uploaded)
-            return True
-        return False
+        uploaded = [i.rsplit("/", 1)[0] for i in self.bucket.uploaded if i.endswith("/data.json.gz")]
+        if not uploaded:
+            return False
+        logging.info("{} ficheros actualizados".format(len(uploaded)))
+        self.glue.start()  # *uploaded)
+        return True
 
 if __name__ == "__main__":
     args = mkArg(

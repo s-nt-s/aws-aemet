@@ -18,7 +18,8 @@ args = mkArg(
     "Scraping de la AEMET y actualización de la base de datos",
     mes="Trata los datos mensuales",
     dia="Trata los datos diarios",
-    pre="Trata los datos de prediccion"
+    pre="Trata los datos de prediccion",
+    glue="Ejecutar Glue"
 )
 
 if not(args.mes or args.dia or args.pre):
@@ -35,15 +36,13 @@ if args.mes:
 if args.pre:
     sc.do_prediccion()
 
-if not (args.dia or args.pre):
-    logging.info("Se actualizara la base de datos mas tarde, cuando se traten los datos diarios")
-    sys.exit()
-
 if not sc.update():
     logging.info("No hay nada que actualizar")
     sys.exit()
 
-sc.glue.raise_if_error()
+if args.glue:
+    sc.glue.start()
+    #sc.glue.raise_if_error()
 
 up = Update(
     DB(os.environ['DB_TARGET'], schema="aemet"),

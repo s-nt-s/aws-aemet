@@ -159,7 +159,7 @@ class Aemet:
             return self.get_json(url, no_data=no_data)
         return j
 
-    def get_xml(self, url):
+    def get_xml(self, url, with_source=False):
         r = self._get(url)
         if r is None:
             return None
@@ -169,14 +169,17 @@ class Aemet:
             logging.critical("GET "+url+" > "+str(r.text) +
                              " > "+str(e), exc_info=True)
             return None
+        if with_source:
+            return soup, r.text
         return soup
 
     def get_prediccion(self, municipio):
         logging.info("PREDICCION "+municipio)
         url = self.url.localidad.format(municipio=municipio)
-        xml = self.get_xml(url)
+        xml = self.get_xml(url, with_source=True)
         if xml is None:
             return None
+        xml, source = xml
         arr = []
         elaborado = get_txt(xml, "elaborado")
         for dia in xml.select("prediccion > dia"):
@@ -218,7 +221,7 @@ class Aemet:
             elaborado=elaborado,
             dias=arr,
             url=url,
-            xml=xml,
+            source=source,
             municipio=municipio
         )
 

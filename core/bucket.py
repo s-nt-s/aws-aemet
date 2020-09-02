@@ -15,23 +15,41 @@ class Bucket:
         self.new_files = []
         self.uploaded = []
 
-    def up_jsgz(self, data, target, commet=None, overwrite=True):
+    def up_gz(self, data, target, commet=None, overwrite=True):
         if data is None:
             return
+        content_type = None
         if target.endswith("/"):
-            target = target + "data"
-        target = target + ".json.gz"
+            if isinstance(data, str):
+                target = target + "data.txt"
+            else:
+                target = target + "data.json"
+
+        ext = target.split(".")[-1].lower()
+        if ext == "xml":
+            content_type = "text/xml"
+        elif ext == "json":
+            content_type = "application/json"
+        if ext == "txt" or isinstance(data, str):
+            content_type = "text/plain"
+        if content_type is None:
+            raise Exception("No se ha podido determinar el ContentType")
+
+        target = target + ".gz"
 
         if not self.exist(target):
             self.new_files.append(target)
         elif not overwrite:
-            return
+            return False
         compressed_fp = BytesIO()
         with gzip.GzipFile(fileobj=compressed_fp, mode='w') as gz:
-            if not data:
-                gz.write((json.dumps(data)+"\n").encode())
-            for i in data:
-                gz.write((json.dumps(i)+"\n").encode())
+            if isinstance(data, str):
+                gz.write(data.encode())
+            else:
+                if not data:
+                    gz.write((json.dumps(data)+"\n").encode())
+                for i in data:
+                    gz.write((json.dumps(i)+"\n").encode())
             if commet is not None:
                 gz.write("/* {} */".format(commet).encode())
         compressed_fp.seek(0)
@@ -39,8 +57,9 @@ class Bucket:
         r = self.bucket.upload_fileobj(
             compressed_fp,
             target,
-            {'ContentType': 'application/json', 'ContentEncoding': 'gzip'}
+            {'ContentType': content_type, 'ContentEncoding': 'gzip'}
         )
+        return True
 
     def exist(self, target):
         objs = list(self.bucket.objects.filter(Prefix=target))
@@ -64,7 +83,7 @@ class Bucket:
 
         kwargs = {'Bucket': self.name}
 
-        # We can pass the prefix directly to the S3 API.  If the user has passed
+        # We can pass the prefix directly to the S3 API. If the user has passed
         # a tuple or list of prefixes, we go through them one by one.
         if isinstance(prefix, str):
             prefixes = (prefix, )
