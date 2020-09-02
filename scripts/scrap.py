@@ -93,6 +93,7 @@ class Scrap:
             data = api.get_prediccion(mun)
             if data.dias:
                 yield prov, data
+
         for prov, data in tm.run(do_work, self.loop_prediccion()):
             target = "raw/AEMET/PREDICCION/elaborado={}/provincia={}/municipio={}/".format(data.elaborado, prov, data.municipio)
             bucket.up_jsgz(
