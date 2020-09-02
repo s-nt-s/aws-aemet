@@ -109,10 +109,9 @@ class Aemet:
             return self.last_response
         except Exception as e:
             if intentos < 4:
-                self.sleep("en {}".format(url_debug))
+                self.sleep("en {}".format(self.last_url))
                 return self._get(url, url_debug=url_debug, intentos=intentos+1)
-            logging.critical("GET "+(url_debug or url) +
-                             " > "+str(e), exc_info=True)
+            logging.critical("GET "+self.last_url+ " > "+str(e), exc_info=True)
             return None
 
     def get_json(self, url, no_data=None):
