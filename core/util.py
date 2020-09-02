@@ -8,6 +8,15 @@ from bunch import Bunch
 import argparse
 import logging
 
+def chunks(lst, n):
+    arr = []
+    for i in lst:
+        arr.append(i)
+        if len(arr)==n:
+            yield arr
+            arr = []
+    if arr:
+        yield arr
 
 def save_js(file, *datas, indent=2, **kargv):
     separators = (',', ':') if indent is None else None

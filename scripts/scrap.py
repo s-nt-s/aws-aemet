@@ -4,6 +4,7 @@ from core.aemet import Aemet
 from core.bucket import Bucket
 from core.glue import Glue
 from core.util import YEAR_UPDATE, YEAR, mkArg
+from core.threadme import ThreadMe
 import os
 from datetime import datetime
 from functools import lru_cache
@@ -81,19 +82,25 @@ class Scrap:
                     commet=self.api.last_url
                 )
 
-    def do_prediccion(self):
+    def loop_prediccion(self):
         for prov in self.api.get_provincias():
             for mun in self.api.get_municipios(prov):
-                data = self.api.get_prediccion(mun)
-                if data.dias:
-                    target = "raw/AEMET/PREDICCION/elaborado={}/provincia={}/municipio={}/".format(data.elaborado, prov, mun)
-                    self.bucket.up_jsgz(
-                        data.dias,
-                        target,
-                        commet=self.api.last_url+"\n\n"+self.api.last_response.text,
-                        overwrite=False
-                    )
+                yield prov, mun
 
+    def do_prediccion(self):
+        tm = ThreadMe(fix_param=(self.api, self.bucket), max_thread=30)
+        def do_work(api, bucket, prov, mun):
+            data = api.get_prediccion(mun)
+            if data.dias:
+                yield prov, data
+        for prov, data in tm.run(do_work, self.loop_prediccion()):
+            target = "raw/AEMET/PREDICCION/elaborado={}/provincia={}/municipio={}/".format(data.elaborado, prov, data.municipio)
+            bucket.up_jsgz(
+                data.dias,
+                target,
+                commet=data.url+"\n\n"+str(data.xml),
+                overwrite=False
+            )
 
     def update(self):
         uploaded = [i.rsplit("/", 1)[0] for i in self.bucket.uploaded if ".txt." not in i]

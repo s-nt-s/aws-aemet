@@ -41,3 +41,24 @@ detectar datos nuevos en S3 y dejarlos disponibles en Athena
 **c)** Finalmente habrá un proyecto CodeBuild que sera lanzado automaticamente
 cada vez que Glue termine y que se encargará de pasar los datos de Athena
 a RDS PostgreSQL ([buildspec/update.yml](buildspec/update.yml))
+
+## Ejemplo de timetable
+
+* Regla `30 4 * * ? *` para el histórico diario
+* Regla ` 0 4 * * ? *` para la predicción diaria
+* Regla ` 0 0 3 * ? *` para el histórico mensual
+* Regla ` 0 5 * * ? *` para Glue
+
+Las reglas `cron` usan la hora GMT, así que suponiendo que estamos en
+el horario central europea de verano (CEST o UTC+02:00) esto significa
+que:
+
+* a las 6:30 recogemos datos del histórico diario
+* a las 6:00 recogemos datos de la predicción diaria
+* el tercer día de cada mes a las 2:00 recogemos datos del histórico mensual
+* a las 7:00 ejecutamos Glue
+* cuando termine Glue se volcaran los datos en RDS PostgreSQL
+
+Suponiendo que los datos diarios tardan en recogerse 15min, las predicciones 1 hora,
+Glue tarda 30 minutos y el volcado a RDS PostgreSQL 10 minutos, el resultado final
+estará disponible a las 7:40
