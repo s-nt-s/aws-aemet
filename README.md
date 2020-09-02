@@ -62,5 +62,5 @@ que:
 * cuando termine Glue se volcaran los datos en RDS PostgreSQL
 
 Suponiendo que los datos diarios tardan en recogerse 15min, las predicciones
-30 minutos, Glue tarda 30 minutos y el volcado a RDS PostgreSQL 10 minutos,
-el resultado final estará disponible a las 7:40
+30 minutos, Glue tarda 7 minutos y el volcado a RDS PostgreSQL 3 minutos,
+el resultado final estará disponible a las 7:10
