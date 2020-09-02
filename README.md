@@ -50,7 +50,8 @@ a RDS PostgreSQL ([buildspec/update.yml](buildspec/update.yml))
 * Regla `00 0 3 * ? *` para el histórico mensual
 * Regla `00 5 * * ? *` para Glue
 
-Las reglas `cron` usan la hora GMT, así que suponiendo que estamos en
+[Las reglas `cron`](https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html)
+usan la hora GMT, así que suponiendo que estamos en
 el horario central europea de verano (CEST o UTC+02:00) esto significa
 que:
 
