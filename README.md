@@ -31,7 +31,7 @@ $ pip install -r requirement.txt
 
 **a)** Para cada grupo de datos que queremos recopilar
 (histórico diario, histórico mensual, predicción diaria) tendremos un proyecto
-CodeBuild que recupere los datos de AEMET y los guarde en S3 (buildspec/scrap.yml)
+CodeBuild que recupere los datos de AEMET y los guarde en S3 ([buildspec/scrap.yml](buildspec/scrap.yml))
 el cual programaremos su ejecución periódica con  CloudWatch
 (histórico diario y predicción diaria todos los días, y histórico mensual cada mes).
 
@@ -40,4 +40,4 @@ detectar datos nuevos en S3 y dejarlos disponibles en Athena
 
 **c)** Finalmente habrá un proyecto CodeBuild que sera lanzado automaticamente
 cada vez que Glue termine y que se encargará de pasar los datos de Athena
-a RDS PostgreSQL (buildspec/update.yml)
+a RDS PostgreSQL ([buildspec/update.yml](buildspec/update.yml))
