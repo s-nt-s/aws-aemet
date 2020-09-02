@@ -89,7 +89,7 @@ class Scrap:
 
     def do_prediccion(self):
         tm = ThreadMe(fix_param=(self.api, self.bucket), max_thread=30)
-        
+
         def do_work(api, bucket, prov, mun):
             data = api.get_prediccion(mun)
             if data.dias:
