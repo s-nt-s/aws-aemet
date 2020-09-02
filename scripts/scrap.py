@@ -82,41 +82,36 @@ class Scrap:
                     commet=self.api.last_url
                 )
 
-    def loop_prediccion(self):
-        for prov in self.api.get_provincias():
-            for mun in self.api.get_municipios(prov):
-                yield prov, mun
-
     def do_prediccion(self):
-        tm = ThreadMe(fix_param=(self.api, self.bucket), max_thread=30)
+        tm = ThreadMe(fix_param=self.api, max_thread=30)
 
-        def do_work(api, bucket, prov, mun):
+        def do_work(api, mun):
             data = api.get_prediccion(mun)
             if data.dias:
-                return prov, data
+                return data
 
-        prov_data={}
-        elaborados=set()
-        for prov, data in tm.run(do_work, self.loop_prediccion()):
-            key = (prov, data.elaborado)
-            if prov not in prov_data:
-                prov_data[key]=[]
-            prov_data[key].append(data)
-
-        for (prov, elaborado), datas in prov_data.items():
-            prov_target = "raw/AEMET/PREDICCION/elaborado={}/provincia={}/".format(elaborado, prov)
-            dias = []
+        for prov in self.api.get_provincias():
+            datas = list(tm.run(do_work, self.api.get_municipios(prov)))
+            elab_dias={}
             for data in datas:
+                if data.elaborado not in elab_dias:
+                    elab_dias[data.elaborado] = []
+                dias = []
                 for dia in data.dias:
                     dia = {**{"municipio":data.municipio}, **dia}
                     dias.append(dia)
-            dias = sorted(dias, key=lambda d:(d["municipio"], d["fecha"]))
-            self.bucket.up_gz(
-                dias,
-                prov_target
-            )
+                elab_dias[data.elaborado].extend(dias)
+
+            for elaborado, dias in elab_dias.items():
+                prov_target = "raw/AEMET/PREDICCION/elaborado={}/provincia={}/".format(elaborado, prov)
+                dias = sorted(dias, key=lambda d:(d["municipio"], d["fecha"]))
+                self.bucket.up_gz(
+                    dias,
+                    prov_target
+                )
+
             for data in datas:
-                target = prov_target + data.municipio + ".xml"
+                target = "raw/AEMET/PREDICCION/elaborado={}/provincia={}/{}.xml".format(data.elaborado, prov, data.municipio)
                 self.bucket.up_gz(
                     data.source.rstrip()+"\n<!-- "+data.url+" -->",
                     target,
