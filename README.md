@@ -18,23 +18,26 @@ $ apt install libpq-dev postgresql-client-common postgresql-client-11
 $ pip install -r requirement.txt
 ```
 
+# Piezas
+
+1. AWS S3 para guardar los datos crudos recuperados de la AEMET (con poca o ninguna modificación)
+2. AWS Glue para crear un catalogo de datos sobre los archivos almacenados en AWS S3
+3. AWS Athena para hacer consultas sobre esos datos y normalizarlos
+4. AWS RDS PostgreSQL para almacenar el resultado y crear las vistas con las agregaciones
+5. AWS CodeBuild para ejecutar los scripts que hacen el trabajo
+6. AWS CloudWatch Rules para programar la ejecución de los proyectos AWS CodeBuild
+
 # Flujo de trabajo
 
-Para cada grupo de datos que queremos recopilar, el esquema general es:
+**a)** Para cada grupo de datos que queremos recopilar
+(histórico diario, histórico mensual, predicción diaria) tendremos un proyecto
+CodeBuild que recupere los datos de AEMET y los guarde en S3 (buildspec/scrap.yml)
+el cual programaremos su ejecución periódica con  CloudWatch
+(histórico diario y predicción diaria todos los días, y histórico mensual cada mes).
 
-1. Un script lee datos de la aemet, los guarda en `s3` y
-lanza un trabajo el `Glue` para que los datos sean catalogados generando
-una base de datos en `Athena`
-2. Un script que lanza consultas en `Athena` y carga el resultado
-(ya limpio y normalizado) en `RDS PostgreSQL`
-3. Vistas materializadas en `RDS PostgreSQL` que contienen las agregaciones
-que necesitamos que serán refrescadas periódicamente
+**b)** Definiremos un Crawler de Glue que se ejecutara diariamente para
+detectar datos nuevos en S3 y dejarlos disponibles en Athena
 
-Lo cual se orquesta con ejecuciones regulares para mantener los datos actualizados.
-
-Los scripts están preparados para trabajar de manera incremental evitando cargar
-datos de la AEMET ya cargados en ejecuciones anteriores, con la salvedad de que
-los datos del año en curso (y del año anterior si estamos en marzo o antes)
-siempre se solicitan a la AEMET machacando en `Athena` y `RDS PostgreSQL` lo que
-ya hubiera. Esto se hace porque los datos del año en curso cambian durante todo
-el año e incluso a veces los del año anterior tardan en estar consolidados.
+**c)** Finalmente habrá un proyecto CodeBuild que sera lanzado automaticamente
+cada vez que Glue termine y que se encargará de pasar los datos de Athena
+a RDS PostgreSQL (buildspec/update.yml)
