@@ -36,13 +36,13 @@ if args.mes:
 if args.pre:
     sc.do_prediccion()
 
-if not sc.update():
+if not sc.need_update():
     logging.info("No hay nada que actualizar")
     sys.exit()
 
 if args.glue:
     sc.glue.start()
-    #sc.glue.raise_if_error()
+    sc.glue.raise_if_error()
 
 up = Update(
     DB(os.environ['DB_TARGET'], schema="aemet"),

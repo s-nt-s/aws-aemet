@@ -18,7 +18,6 @@ class Scrap:
     def __init__(self, bucket, glue):
         self.bucket = bucket
         self.api = Aemet()
-        self.glue = glue
 
     @property
     @lru_cache(maxsize=None)
@@ -118,13 +117,8 @@ class Scrap:
                     overwrite=False
                 )
 
-    def update(self):
-        uploaded = [i.rsplit("/", 1)[0] for i in self.bucket.uploaded if i.endswith("/data.json.gz")]
-        if not uploaded:
-            return False
-        logging.info("{} ficheros actualizados".format(len(uploaded)))
-        self.glue.start()  # *uploaded)
-        return True
+    def need_update(self):
+        return [i.rsplit("/", 1)[0] for i in self.bucket.uploaded if i.endswith("/data.json.gz")]
 
 if __name__ == "__main__":
     args = mkArg(
@@ -134,12 +128,13 @@ if __name__ == "__main__":
         pre="Hace scraping de los datos de prediccion",
         glue="Ejecutar Glue"
     )
-    sc = Scrap(Bucket(os.environ['S3_TARGET']), Glue(os.environ['GLUE_TARGET']))
+    sc = Scrap(Bucket(os.environ['S3_TARGET']))
     if args.dia:
         sc.do_dia()
     if args.mes:
         sc.do_mes()
     if args.pre:
         sc.do_prediccion()
-    if args.glue and sc.update():
-        sc.glue.raise_if_error()
+    if args.glue and sc.need_update():
+        glue = Glue(os.environ['GLUE_TARGET'])
+        glue.start()

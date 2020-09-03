@@ -85,7 +85,7 @@ if __name__ == "__main__":
     if args.glue:
         glue = Glue(os.environ['GLUE_TARGET'])
         glue.start()
-        glue.raise_if_error()
+        # glue.raise_if_error()
 
     if args.dia or args.mes:
         up.do_bases()
@@ -93,7 +93,12 @@ if __name__ == "__main__":
         up.do_dia()
     if args.mes:
         up.do_mes()
+
+    if args.dia or args.mes:
+        up.db.refresh("PROV_DIAS", "PROV_SEMANAS")
+
     if args.pre:
         up.do_prediccion()
+        up.db.refresh("MUN_PREDICCION")
 
     up.db.close()
