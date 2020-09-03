@@ -29,7 +29,7 @@ class DB:
         c = self.con.cursor()
         c.execute(sql)
         r = c.fetchone()
-        if len(r) == 1:
+        if r is not None and len(r) == 1:
             r = r[0]
         c.close()
         return r
