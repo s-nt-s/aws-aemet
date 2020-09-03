@@ -17,4 +17,18 @@ select
 from
   prediccion
 where
-  fecha is not null
+  fecha is not null and
+  municipio is not null and not(
+    prob_precipitacion is null and
+    viento_velocidad is null and
+    temperatura_maxima is null and
+    temperatura_minima is null and
+    humedad_relativa_maxima is null and
+    humedad_relativa_minima is null and
+    estado_cielo is null and
+    sens_termica_maxima is null and
+    sens_termica_minima is null and
+    racha_max is null and
+    uv_max is null and
+    cota_nieve_prov is null
+  )

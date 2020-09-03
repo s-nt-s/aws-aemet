@@ -45,4 +45,20 @@ from
   dia
 where
   base is not null and
-  fecha is not null
+  fecha is not null and not(
+    dir is null and
+    horapresmax is null and
+    horapresmin is null and
+    horaracha is null and
+    horatmax is null and
+    horatmin is null and
+    prec is null and
+    presmax is null and
+    presmin is null and
+    racha is null and
+    sol is null and
+    tmax is null and
+    tmed is null and
+    tmin is null and
+    velmedia is null
+  )
