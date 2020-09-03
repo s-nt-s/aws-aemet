@@ -14,6 +14,8 @@ from bunch import Bunch
 from .provincias import prov_to_cod
 from .util import mkBunch, safe_number, sexa_to_dec, YEAR, flatten_json
 
+re_status = re.compile(r"<h1>\s*HTTP\s*Status\s*(\d+)\s*(.*?)</h1>", re.IGNORECASE)
+
 def get_txt(soup, slc):
     n = soup.select_one(slc)
     if n is None:
@@ -41,6 +43,9 @@ class Aemet:
         self.last_url = None
         self.last_response = None
         self.count_requests = 0
+        if not self.requests_verify:
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     @lru_cache(maxsize=None)
     def get_provincias(self, source="html"):
@@ -101,31 +106,55 @@ class Aemet:
         time.sleep(self.sleep_time)
         self.count_requests = 0
 
-    def _get(self, url, url_debug=None, intentos=0):
+    def _get(self, url, url_debug=None, intentos=4, count_requests=True):
+        log_url = (url_debug or url)
         try:
-            self.count_requests = self.count_requests + 1
-            self.last_url = url_debug or url
-            self.last_response = requests.get(url, verify=self.requests_verify)
-            return self.last_response
+            if count_requests:
+                self.count_requests = self.count_requests + 1
+                self.last_url = log_url
+                self.last_response = None
+            r = requests.get(url, verify=self.requests_verify)
+            if count_requests:
+                self.last_response = r
+            m = re_status.search(r.text)
+            if m and intentos > 0:
+                status, error = m.groups()
+                error = error.lstrip("-").lstrip()
+                self.sleep("status:{} en {} - {}".format(status, log_url, error))
+                return self._get(url, url_debug=url_debug, intentos=intentos-1)
+            return r
         except Exception as e:
-            if intentos < 4:
-                self.sleep("en {}".format(self.last_url))
-                return self._get(url, url_debug=url_debug, intentos=intentos+1)
-            logging.critical("GET "+self.last_url+ " > "+str(e), exc_info=True)
+            if intentos > 0:
+                self.sleep("{} en {}".format(str(e), log_url))
+                return self._get(url, url_debug=url_debug, intentos=intentos-1)
+            logging.critical("GET "+log_url+ " > "+str(e), exc_info=True)
             return None
 
-    def get_json(self, url, no_data=None):
-        r = self._get(self.addkey(url), url_debug=url)
+    def _json(self, url, label):
+        if label == "url_datos":
+            r = self._get(self.addkey(url), url_debug=url, count_requests=False, intentos=0)
+        else:
+            r = self._get(self.addkey(url), url_debug=url)
         if r is None:
             return None
         try:
             j = r.json()
         except Exception as e:
             if "429 Too Many Requests" in r.text:
-                self.sleep("por error url_api:429:Too Many Requests")
-                return self.get_json(url, no_data=no_data)
-            logging.critical("GET "+url+" > "+str(r.text) +
-                             " > "+str(e), exc_info=True)
+                self.sleep("por error {}:429:Too Many Requests".format(label))
+                return self._json(url, label)
+            logging.critical("GET "+url+" > "+str(r.text) + " > "+str(e), exc_info=True)
+            return None
+        if isinstance(j, dict) and j.get("estado") == 429:
+            # Too Many Requests
+            self.sleep("por error {}:429:Too Many Requests".format(label))
+            return self._json(url, label)
+        return j
+
+
+    def get_json(self, url, no_data=None):
+        j = self._json(url, "url_api")
+        if j is None:
             return None
         url_datos = j.get('datos')
         if url_datos is None:
@@ -133,30 +162,9 @@ class Aemet:
             if estado == 404:
                 # No hay datos que satisfagan esos criterios
                 return no_data
-            if estado == 429:
-                # Too Many Requests
-                self.sleep("por error url_api:429:Too Many Requests")
-                return self.get_json(url, no_data=no_data)
             logging.critical("GET "+url+" > "+str(j), exc_info=True)
             return None
-        try:
-            r = requests.get(url_datos, verify=self.requests_verify)
-        except Exception as e:
-            logging.critical("GET "+url_datos+" > "+str(e), exc_info=True)
-            return None
-        try:
-            j = r.json()
-        except Exception as e:
-            if "429 Too Many Requests" in r.text:
-                self.sleep("por error url_datos:429:Too Many Requests")
-                return self.get_json(url, no_data=no_data)
-            logging.critical("GET "+url_datos+" > " +
-                             str(r.text)+" > "+str(e), exc_info=True)
-            return None
-        if isinstance(j, dict) and j.get("estado") == 429:
-            # Too Many Requests
-            self.sleep("por error url_datos:429:Too Many Requests")
-            return self.get_json(url, no_data=no_data)
+        j = self._json(url_datos, "url_datos")
         return j
 
     def get_xml(self, url, with_source=False):
