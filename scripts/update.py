@@ -49,7 +49,6 @@ class Update:
         self.copy(sql, "meses", key="base, fecha")
 
     def do_prediccion(self):
-        done = list()
         sql = read_file("sql/athena/prediccion.sql").strip()
         min_ela = self.db.one('''
             select elaborado from (
