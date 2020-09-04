@@ -15,7 +15,7 @@ import logging
 re_year = re.compile(r".*/year=(\d+).*")
 
 class Scrap:
-    def __init__(self, bucket, glue):
+    def __init__(self, bucket):
         self.bucket = bucket
         self.api = Aemet()
 
