@@ -188,7 +188,7 @@ from
 where
   fecha>=current_date and fecha<(current_date + interval '7' day)
 group by
-  provincia, fecha
+  provincia
 ;
 
 commit;
