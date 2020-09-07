@@ -179,7 +179,6 @@ COMMENT ON COLUMN aemet.prediccion.elaborado IS 'Fecha y hora de elaboración';
 COMMENT ON COLUMN aemet.prediccion.fecha IS 'Período de validez de la predicción';
 COMMENT ON COLUMN aemet.prediccion.municipio IS 'ID del municipio';
 COMMENT ON COLUMN aemet.prediccion.prob_precipitacion IS 'Probabilidad de precipitación (%)';
-COMMENT ON COLUMN aemet.prediccion.viento_velocidad IS 'Velocidad del viento (km/h)';
 COMMENT ON COLUMN aemet.prediccion.temperatura_maxima IS 'Temperatura máxima (grados Celsius)';
 COMMENT ON COLUMN aemet.prediccion.temperatura_minima IS 'Temperatura mínima (grados Celsius)';
 COMMENT ON COLUMN aemet.prediccion.humedad_relativa_maxima IS 'Humedad relativa máxima (%)';
@@ -187,8 +186,11 @@ COMMENT ON COLUMN aemet.prediccion.humedad_relativa_minima IS 'Humedad relativa 
 COMMENT ON COLUMN aemet.prediccion.estado_cielo IS 'Código del estado del Cielo';
 COMMENT ON COLUMN aemet.prediccion.sens_termica_maxima IS 'Sensación térmica máxima (grados Celsius)';
 COMMENT ON COLUMN aemet.prediccion.sens_termica_minima IS 'Sensación térmica mínima (grados Celsius)';
-COMMENT ON COLUMN aemet.prediccion.racha_max IS 'Racha máxima (km/h)';
 COMMENT ON COLUMN aemet.prediccion.uv_max IS 'Índice ultravioleta máximo';
 COMMENT ON COLUMN aemet.prediccion.cota_nieve_prov IS 'Cota de nieve (metros)';
+-- La aemet da viento_velocidad y racha_max en km/h, pero
+-- lo transformamos a m/s para que sea comparable con el historico
+COMMENT ON COLUMN aemet.prediccion.viento_velocidad IS 'Velocidad del viento (m/s = km/h * (10/36))';
+COMMENT ON COLUMN aemet.prediccion.racha_max IS 'Racha máxima (m/s = km/h * (10/36))';
 
 commit;
