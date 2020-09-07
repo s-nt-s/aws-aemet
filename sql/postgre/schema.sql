@@ -161,7 +161,7 @@ CREATE TABLE aemet.prediccion (
   fecha date,
   municipio varchar(5),
   prob_precipitacion int4 NULL,
-  viento_velocidad int4 NULL,
+  viento_velocidad float8 NULL,
   temperatura_maxima int4 NULL,
   temperatura_minima int4 NULL,
   humedad_relativa_maxima int4 NULL,
@@ -169,7 +169,7 @@ CREATE TABLE aemet.prediccion (
   estado_cielo int4 NULL,
   sens_termica_maxima int4 NULL,
   sens_termica_minima int4 NULL,
-  racha_max int4 NULL,
+  racha_max float8 NULL,
   uv_max int4 NULL,
   cota_nieve_prov int4 NULL,
   CONSTRAINT prediccion_pk PRIMARY KEY (elaborado, fecha, municipio)

@@ -14,8 +14,8 @@ select
   cota_nieve_prov,
   -- La aemet da viento_velocidad y racha_max en km/h, pero
   -- lo transformamos a m/s para que sea comparable con el historico
-  viento_velocidad*(10/36) viento_velocidad,
-  racha_max*(10/36) racha_max
+  cast(viento_velocidad as decimal(8,4))*10/36 viento_velocidad,
+  cast(racha_max as decimal(8,4))*10/36 racha_max
 from
   prediccion
 where

@@ -51,17 +51,25 @@ class DB:
             self.con.commit()
         c.close()
 
+    def _get_file(self, s3path):
+        s3 = boto3.client('s3')
+        bucket, file = s3path.split("/", 3)[2:]
+        obj = s3.get_object(Bucket=bucket, Key=file)
+        return obj
+
     def copy(self, url, table, key=None, delimiter=",", overwrite=True):
         table = self._table(table)
         tmp_table = "tmp_"+table.replace(".", "_")
         logging.info("COPY in {} from {}".format(table, url))
         obj = None
-        s3 = boto3.client('s3')
         try:
-            bucket, file = url.split("/", 3)[2:]
-            obj = s3.get_object(Bucket=bucket, Key=file)
+            obj = self._get_file(url)
         except ClientError:
             return False
+        header = obj['Body']._raw_stream.readline()
+        header = header.decode().replace('"', '')
+        header = header.strip()
+        obj = self._get_file(url)
         try:
             if self.one("select count(*) from "+table) == 0:
                 key = None
@@ -75,9 +83,10 @@ class DB:
                     WITH NO DATA;
                 '''.format(table, tmp_table))
             c.copy_expert(sql='''
-                COPY {} FROM stdin WITH CSV HEADER DELIMITER as '{}'
+                COPY {} ({}) FROM stdin WITH CSV HEADER DELIMITER '{}'
             '''.format(
                 tmp_table if key else table,
+                header,
                 delimiter
             ), file=obj['Body'])
             if key:

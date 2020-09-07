@@ -56,7 +56,7 @@ left join
 ) PM
 on PD.provincia=PM.provincia and PM.fecha=date_trunc('month', PD.fecha)
 ;
-CREATE UNIQUE INDEX aemet.prov_dias_pk
+CREATE UNIQUE INDEX prov_dias_pk
 ON aemet.PROV_DIAS (provincia, fecha);
 
 -- Agrupa por semana valores de las provincias
@@ -86,9 +86,9 @@ from
 group by
   provincia, EXTRACT(ISOYEAR FROM fecha), EXTRACT(week FROM fecha), TO_DATE(TO_CHAR(fecha, 'IYYYIW'), 'IYYYIW')
 ;
-CREATE UNIQUE INDEX aemet.prov_semanas_pk1
+CREATE UNIQUE INDEX prov_semanas_pk1
 ON aemet.PROV_SEMANAS (provincia, anio, semana);
-CREATE UNIQUE INDEX aemet.prov_semanas_pk2
+CREATE UNIQUE INDEX prov_semanas_pk2
 ON aemet.PROV_SEMANAS (provincia, lunes);
 
 -- Prediccion de los proximos dias donde para cada
@@ -139,10 +139,10 @@ group by
   p.municipio, p.fecha
 ;
 
-CREATE UNIQUE INDEX aemet.mun_prediccion_pk
+CREATE UNIQUE INDEX mun_prediccion_pk
 ON aemet.MUN_PREDICCION (municipio, fecha);
 
-CREATE INDEX aemet.mun_prediccion_prov
+CREATE INDEX mun_prediccion_prov
 ON aemet.MUN_PREDICCION (provincia);
 
 CREATE VIEW aemet.PROV_PREDICCION AS
