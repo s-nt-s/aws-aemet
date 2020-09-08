@@ -157,7 +157,7 @@ COMMENT ON COLUMN aemet.meses.w_med IS 'Velocidad media en km/h elaborada a part
 COMMENT ON COLUMN aemet.meses.w_rec IS 'Recorrido medio diario (de 07 a 07 UTC) en Km';
 
 CREATE TABLE aemet.prediccion (
-  elaborado timestamp,
+  elaborado timestamptz,
   fecha date,
   municipio varchar(5),
   prob_precipitacion int4 NULL,
