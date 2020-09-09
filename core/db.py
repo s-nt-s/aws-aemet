@@ -14,6 +14,11 @@ class DB:
             db = db + "." + schema
         logging.info("{} conectada en {}".format(db, host))
 
+    def execute(self, sql):
+        c = self.con.cursor()
+        c.execute(sql)
+        c.close()
+
     def close(self):
         self.con.commit()
         self.con.close()

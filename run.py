@@ -27,7 +27,7 @@ if not(args.mes or args.dia or args.pre):
 
 bucket = Bucket(os.environ['S3_TARGET'])
 
-sc = Scrap(bucket, Glue(os.environ['GLUE_TARGET']))
+sc = Scrap(bucket)
 
 if args.dia:
     sc.do_dia()
@@ -41,8 +41,9 @@ if not sc.need_update():
     sys.exit()
 
 if args.glue:
-    sc.glue.start()
-    sc.glue.raise_if_error()
+    glue = Glue(os.environ['GLUE_TARGET'])
+    glue.start()
+    glue.raise_if_error()
 
 up = Update(
     DB(os.environ['DB_TARGET'], schema="aemet"),

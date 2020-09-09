@@ -1,4 +1,5 @@
 -- CREATE database municipios;
+ALTER DATABASE municipios SET timezone TO 'Europe/Madrid';
 
 DROP TABLE IF EXISTS aemet.meses;
 DROP TABLE IF EXISTS aemet.dias;
