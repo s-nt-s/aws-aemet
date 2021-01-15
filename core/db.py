@@ -14,29 +14,41 @@ class DB:
             db = db + "." + schema
         logging.info("{} conectada en {}".format(db, host))
 
-    def execute(self, sql):
-        c = self.con.cursor()
+    def execute(self, sql, c=None):
+        new_c = c is None
+        if new_c:
+            c = self.con.cursor()
+        logging.debug(sql)
         c.execute(sql)
-        c.close()
+        if new_c:
+            c.close()
 
     def close(self):
         self.con.commit()
         self.con.close()
 
-    def select(self, sql):
-        c = self.con.cursor()
+    def select(self, sql, c=None):
+        new_c = c is None
+        if new_c:
+            c = self.con.cursor()
+        logging.debug(sql)
         c.execute(sql)
         for r in c.fetchall():
             yield r
-        c.close()
+        if new_c:
+            c.close()
 
-    def one(self, sql):
-        c = self.con.cursor()
+    def one(self, sql, c=None):
+        new_c = c is None
+        if new_c:
+            c = self.con.cursor()
+        logging.debug(sql)
         c.execute(sql)
         r = c.fetchone()
         if r is not None and len(r) == 1:
             r = r[0]
-        c.close()
+        if new_c:
+            c.close()
         return r
 
     def _table(self, s):
@@ -55,6 +67,15 @@ class DB:
             c.execute("REFRESH MATERIALIZED VIEW "+table)
             self.con.commit()
         c.close()
+
+    def copy_expert(self, sql, file, c=None):
+        new_c = c is None
+        if new_c:
+            c = self.con.cursor()
+        logging.debug(sql)
+        c.copy_expert(sql=sql, file=file)
+        if new_c:
+            c.close()
 
     def _get_file(self, s3path):
         s3 = boto3.client('s3')
@@ -80,43 +101,43 @@ class DB:
                 key = None
             c = self.con.cursor()
             if key:
-                c.execute('''
+                self.execute('''
                     CREATE TEMP TABLE {1}
                     ON COMMIT DROP
                     AS
                     SELECT * FROM {0}
                     WITH NO DATA;
-                '''.format(table, tmp_table))
-            c.copy_expert(sql='''
+                '''.format(table, tmp_table), c=c)
+            self.copy_expert('''
                 COPY {} ({}) FROM stdin WITH CSV HEADER DELIMITER '{}'
             '''.format(
                 tmp_table if key else table,
                 header,
                 delimiter
-            ), file=obj['Body'])
+            ), obj['Body'], c=c)
             if key:
                 if overwrite:
-                    c.execute("SET CONSTRAINTS ALL DEFERRED")
-                    c.execute('''
+                    self.execute("SET CONSTRAINTS ALL DEFERRED", c=c)
+                    self.execute('''
                         delete from {0}
                         where ({1}) in (
                             select {1}
                             from {2}
                         );
-                    '''.format(table, key, tmp_table))
+                    '''.format(table, key, tmp_table), c=c)
                 else:
-                    c.execute('''
+                    self.execute('''
                         delete from {2}
                         where ({1}) in (
                             select {1}
                             from {0}
                         );
-                    '''.format(table, key, tmp_table))
-                c.execute('''
+                    '''.format(table, key, tmp_table), c=c)
+                self.execute('''
                     insert  into {0}
                     select  *
                     from    {1};
-                '''.format(table, tmp_table))
+                '''.format(table, tmp_table), c=c)
             self.con.commit()
             c.close()
         except Exception as e:
