@@ -2,6 +2,7 @@ import boto3
 import time
 import logging
 import botocore
+from .util import sizeof_fmt
 
 params = {
     'region': 'eu-central-1',
@@ -13,6 +14,12 @@ params = {
 
 session = boto3.Session()
 
+def file_size(s3path):
+    s3 = boto3.client('s3')
+    bucket, file = s3path.split("/", 3)[2:]
+    response = s3.head_object(Bucket=bucket, Key=file)
+    size = response['ContentLength']
+    return size
 
 class Athena:
     def __init__(self, database, workspace):
@@ -85,7 +92,9 @@ class Athena:
                 raise Exception(msg)
             elif state == 'SUCCEEDED':
                 s3_path = response['QueryExecution']['ResultConfiguration']['OutputLocation']
-                logging.info(state+": "+s3_path)
+                size = file_size(s3_path)
+                size = sizeof_fmt(size)
+                logging.info(state+": "+s3_path+" ["+size+"]")
                 return s3_path
             time.sleep(wait)
         msg = "AWS Athena {} ({}) wait timeout".format(queryid, state)

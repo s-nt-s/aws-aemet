@@ -105,6 +105,8 @@ def mkArg(main, **kargv):
     parser = argparse.ArgumentParser(main)
     parser.add_argument('--verbose', '-v', action='count',
                         help="Nivel de depuración", default=int(os.environ.get("DEBUG_LEVEL", 0)))
+    parser.add_argument('--muteaws', action='store_true', help="Silencia los logs de AWS")
+
     for k, v in kargv.items():
         parser.add_argument('--'+k, action='store_true', help=v)
     args = parser.parse_args()
@@ -115,6 +117,9 @@ def mkArg(main, **kargv):
     logging.basicConfig(
         level=args.verbose, format='%(asctime)s - %(levelname)s - %(message)s')
 
+    if args.muteaws:
+        for l in "boto3 botocore s3transfer urllib3".split():
+            logging.getLogger(l).setLevel(logging.CRITICAL)
     return args
 
 def flatten_json(y):
@@ -133,6 +138,12 @@ def flatten_json(y):
     flatten(y)
     return out
 
+def sizeof_fmt(num, suffix='B'):
+    for unit in ['','K','M','G','T','P','E','Z']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Y', suffix)
 
 now = datetime.now()
 YEAR = now.year

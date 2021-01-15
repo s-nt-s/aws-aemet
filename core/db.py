@@ -2,6 +2,7 @@ import psycopg2
 import boto3
 from botocore.exceptions import ClientError
 import logging
+from textwrap import dedent
 
 
 class DB:
@@ -12,13 +13,14 @@ class DB:
         self.schema = schema
         if schema:
             db = db + "." + schema
+        self.db = db
         logging.info("{} conectada en {}".format(db, host))
 
     def execute(self, sql, c=None):
         new_c = c is None
         if new_c:
             c = self.con.cursor()
-        logging.debug(sql)
+        logging.debug(self.db+": "+dedent(sql).rstrip())
         c.execute(sql)
         if new_c:
             c.close()
@@ -31,7 +33,7 @@ class DB:
         new_c = c is None
         if new_c:
             c = self.con.cursor()
-        logging.debug(sql)
+        logging.debug(self.db+": "+dedent(sql).rstrip())
         c.execute(sql)
         for r in c.fetchall():
             yield r
@@ -42,7 +44,7 @@ class DB:
         new_c = c is None
         if new_c:
             c = self.con.cursor()
-        logging.debug(sql)
+        logging.debug(self.db+": "+dedent(sql).rstrip())
         c.execute(sql)
         r = c.fetchone()
         if r is not None and len(r) == 1:
@@ -72,7 +74,7 @@ class DB:
         new_c = c is None
         if new_c:
             c = self.con.cursor()
-        logging.debug(sql)
+        logging.debug(self.db+": "+dedent(sql).rstrip())
         c.copy_expert(sql=sql, file=file)
         if new_c:
             c.close()
@@ -125,19 +127,18 @@ class DB:
                             from {2}
                         );
                     '''.format(table, key, tmp_table), c=c)
+                    self.execute('''
+                        insert  into {0}
+                        select  *
+                        from    {1};
+                    '''.format(table, tmp_table), c=c)
                 else:
                     self.execute('''
-                        delete from {2}
-                        where ({1}) in (
-                            select {1}
-                            from {0}
-                        );
-                    '''.format(table, key, tmp_table), c=c)
-                self.execute('''
-                    insert  into {0}
-                    select  *
-                    from    {1};
-                '''.format(table, tmp_table), c=c)
+                        insert  into {0}
+                        select  *
+                        from    {1}
+                        ON CONFLICT({2}) DO NOTHING;
+                    '''.format(table, tmp_table, key), c=c)
             self.con.commit()
             c.close()
         except Exception as e:

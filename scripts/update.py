@@ -5,6 +5,7 @@ from core.athena import Athena
 from core.db import DB
 from core.util import YEAR_UPDATE, YEAR, mkArg, read_file
 from core.aemet import Aemet
+from datetime import timedelta
 import psycopg2
 import os
 
@@ -50,19 +51,9 @@ class Update:
 
     def do_prediccion(self):
         sql = read_file("sql/athena/prediccion.sql").strip()
-        min_ela = self.db.one('''
-            select elaborado from (
-                select
-                    cast(elaborado as date) elaborado, count(*)
-                from
-                    aemet.prediccion
-                group by
-                    cast(elaborado as date)
-                order by
-                    count(*) desc, cast(elaborado as date) desc
-            ) T
-        ''')
+        min_ela = self.db.one("select max(cast(elaborado as date)) from aemet.prediccion")
         if min_ela is not None:
+            min_ela = min_ela - timedelta(days=10)
             sql = sql + " and\n  elaborado>'{:%Y-%m-%dT00:00:00}'".format(min_ela)
         self.copy(sql,  "prediccion", key="elaborado, municipio, fecha" , overwrite=False)
 
