@@ -162,8 +162,6 @@ select
 	max(cota_nieve_prov) cota_nieve_prov
 from
   aemet.MUN_PREDICCION
-where
-  fecha>=current_date
 group by
   provincia, fecha
 ;
