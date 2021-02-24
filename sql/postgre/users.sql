@@ -5,3 +5,4 @@ GRANT SELECT ON ALL TABLES IN SCHEMA aemet TO readonly;
 GRANT SELECT ON aemet.prov_semana_prediccion TO readonly;
 GRANT SELECT ON aemet.prov_dias TO readonly;
 GRANT SELECT ON aemet.prov_semanas TO readonly;
+GRANT SELECT ON aemet.prov_prediccion TO readonly;
