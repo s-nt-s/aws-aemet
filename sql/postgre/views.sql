@@ -119,7 +119,7 @@ select
 from (
 	select * from aemet.prediccion T
   where
-  	T.fecha>=current_date and (
+  	--T.fecha>=current_date and (
   		T.prob_precipitacion is not null or
   		T.viento_velocidad is not null or
   		T.temperatura_maxima is not null or
@@ -132,7 +132,7 @@ from (
   		T.racha_max is not null or
   		T.uv_max is not null or
   		T.cota_nieve_prov is not null
-    )
+    --)
 	order by elaborado desc, fecha desc
 ) p
 group by
