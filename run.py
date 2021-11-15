@@ -1,46 +1,46 @@
 #!/usr/bin/env python3
 
-from scripts.scrap import Scrap
-from scripts.update import Update
-from core.aemet import Aemet
-from core.bucket import Bucket
-from core.glue import Glue
-from core.athena import Athena
-from core.db import DB
-from core.util import mkArg
+import logging
 import os
 import sys
 
-import logging
+from core.athena import Athena
+from core.bucket import Bucket
+from core.db import DB
+from core.glue import Glue
+from core.util import mkArg
+from scripts.scrap import Scrap
+from scripts.update import Update
 
-
-args = mkArg(
+arg = mkArg(
     "Scraping de la AEMET y actualización de la base de datos",
     mes="Trata los datos mensuales",
     dia="Trata los datos diarios",
-    pre="Trata los datos de prediccion",
+    pre="Trata los datos de predicción",
     glue="Ejecutar Glue"
 )
 
-if not(args.mes or args.dia or args.pre):
-    sys.exit("No se ha pasado ningun parametro")
+logger = logging.getLogger(__name__)
+
+if not (arg.mes or arg.dia or arg.pre):
+    sys.exit("No se ha pasado ningún parámetro")
 
 bucket = Bucket(os.environ['S3_TARGET'])
 
 sc = Scrap(bucket)
 
-if args.dia:
+if arg.dia:
     sc.do_dia()
-if args.mes:
+if arg.mes:
     sc.do_mes()
-if args.pre:
+if arg.pre:
     sc.do_prediccion()
 
 if not sc.need_update():
-    logging.info("No hay nada que actualizar")
+    logger.info("No hay nada que actualizar")
     sys.exit()
 
-if args.glue:
+if arg.glue:
     glue = Glue(os.environ['GLUE_TARGET'])
     glue.start()
     glue.raise_if_error()
@@ -50,18 +50,19 @@ up = Update(
     bucket,
     Athena(os.environ['ATHENA_TARGET'], "s3://{}/tmp/".format(os.environ['S3_TARGET']))
 )
-if args.dia or args.mes:
+
+if arg.dia or arg.mes:
     up.do_bases()
 
-if args.dia:
+if arg.dia:
     up.do_dia()
-if args.mes:
+if arg.mes:
     up.do_mes()
 
-if args.dia or args.mes:
+if arg.dia or arg.mes:
     up.db.refresh("PROV_DIAS", "PROV_SEMANAS")
 
-if args.pre:
+if arg.pre:
     up.do_prediccion()
     up.db.refresh("MUN_PREDICCION")
 

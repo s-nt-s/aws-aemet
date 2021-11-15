@@ -1,56 +1,38 @@
+import argparse
 import json
 import logging
 import os
 from datetime import datetime
 
 import yaml
-from bunch import Bunch
-import argparse
-import logging
+from munch import Munch
+
+logger = logging.getLogger(__name__)
+
 
 def chunks(lst, n):
     arr = []
     for i in lst:
         arr.append(i)
-        if len(arr)==n:
+        if len(arr) == n:
             yield arr
             arr = []
     if arr:
         yield arr
 
-def save_js(file, *datas, indent=2, **kargv):
+
+def save_js(file, *datas, indent=2, **kwargs):
     separators = (',', ':') if indent is None else None
     with open(file, "w") as f:
         for data in datas:
             json.dump(data, f, indent=indent, separators=separators)
-        for k, v in kargv.items():
-            f.write("var "+k+"=")
+        for k, v in kwargs.items():
+            f.write("var " + k + "=")
             json.dump(v, f, indent=indent, separators=separators)
             f.write(";\n")
 
 
-def mkBunchParse(obj):
-    if isinstance(obj, list):
-        for i, v in enumerate(obj):
-            obj[i] = mkBunchParse(v)
-        return obj
-    if isinstance(obj, dict):
-        data = []
-        # Si la clave es un año lo pasamos a entero
-        flag = True
-        for k in obj.keys():
-            if not isinstance(k, str):
-                return {k: mkBunchParse(v) for k, v in obj.items()}
-            if not(k.isdigit() and len(k) == 4 and int(k[0]) in (1, 2)):
-                flag = False
-        if flag:
-            return {int(k): mkBunchParse(v) for k, v in obj.items()}
-        obj = Bunch(**{k: mkBunchParse(v) for k, v in obj.items()})
-        return obj
-    return obj
-
-
-def mkBunch(file):
+def readMunch(file):
     if not os.path.isfile(file):
         return None
     ext = file.rsplit(".", 1)[-1]
@@ -61,7 +43,7 @@ def mkBunch(file):
             data = list(yaml.load_all(f, Loader=yaml.FullLoader))
             if len(data) == 1:
                 data = data[0]
-    data = mkBunchParse(data)
+    data = Munch.fromDict(data)
     return data
 
 
@@ -78,12 +60,12 @@ def safe_number(s, label=None, coma=False, nan=None):
         s = float(s)
     except Exception as e:
         if label:
-            logging.critical(label+" = "+str(s) +
-                             " no es un float", exc_info=True)
+            logger.critical(label + " = " + str(s) + " no es un float", exc_info=True)
         return nan
     if s == int(s):
         return int(s)
     return s
+
 
 def sexa_to_dec(i):
     g = i[0:2]
@@ -101,18 +83,18 @@ def read_file(fl):
         return f.read()
 
 
-def mkArg(main, **kargv):
+def mkArg(main, **kwargs):
     parser = argparse.ArgumentParser(main)
     parser.add_argument('--verbose', '-v', action='count',
                         help="Nivel de depuración", default=int(os.environ.get("DEBUG_LEVEL", 0)))
     parser.add_argument('--muteaws', action='store_true', help="Silencia los logs de AWS")
 
-    for k, v in kargv.items():
-        parser.add_argument('--'+k, action='store_true', help=v)
+    for k, v in kwargs.items():
+        parser.add_argument('--' + k, action='store_true', help=v)
     args = parser.parse_args()
 
     levels = [logging.WARNING, logging.INFO, logging.DEBUG]
-    args.verbose = levels[min(len(levels)-1, args.verbose)]
+    args.verbose = levels[min(len(levels) - 1, args.verbose)]
 
     logging.basicConfig(
         level=args.verbose, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -122,8 +104,10 @@ def mkArg(main, **kargv):
             logging.getLogger(l).setLevel(logging.CRITICAL)
     return args
 
+
 def flatten_json(y):
     out = {}
+
     def flatten(x, name=''):
         if type(x) is dict:
             for a in x:
@@ -135,20 +119,25 @@ def flatten_json(y):
                 i += 1
         else:
             out[name[:-1]] = x
+
     flatten(y)
     return out
 
+
 def sizeof_fmt(num, suffix='B'):
-    for unit in ['','K','M','G','T','P','E','Z']:
+    for unit in ['', 'K', 'M', 'G', 'T', 'P', 'E', 'Z']:
         if abs(num) < 1024.0:
             return "%3.1f%s%s" % (num, unit, suffix)
         num /= 1024.0
     return "%.1f%s%s" % (num, 'Y', suffix)
 
+
 now = datetime.now()
+# Año actual
 YEAR = now.year
 YEAR_UPDATE = []
 if now.month < 4:
-    YEAR_UPDATE.append(YEAR-1)
+    YEAR_UPDATE.append(YEAR - 1)
 YEAR_UPDATE.append(YEAR)
+# Años que queremos actualizar
 YEAR_UPDATE = tuple(YEAR_UPDATE)

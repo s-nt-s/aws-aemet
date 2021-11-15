@@ -5,7 +5,7 @@ datos de la [AEMET](https://opendata.aemet.es/centrodedescargas/productosAEMET)
 para abstraernos de algunos de los aspectos más peliagudos de la API original.
 
 Por ejemplo, en muchos desarrollos vamos a querer trabajar a nivel de provincia,
-pero la API de AEMET esta generalmente pensada para trabajar a nivel de base
+pero la API de AEMET está generalmente pensada para trabajar a nivel de base
 (habiendo varias bases por provincia), por lo tanto si en nuestro sistema ya
 tenemos estos datos agregados y almacenados podremos servirlos para nuestras
 aplicaciones sin que ellas tengan que lidiar con la API AEMET, sus timeouts
@@ -33,13 +33,13 @@ $ pip install -r requirement.txt
 (histórico diario, histórico mensual, predicción diaria) tendremos un proyecto
 CodeBuild que recupere los datos de AEMET y los guarde en S3
 ([buildspec/scrap.yml](buildspec/scrap.yml))
-el cual programaremos su ejecución periódica con  CloudWatch
+el cual programaremos su ejecución periódica con CloudWatch
 (histórico diario y predicción diaria todos los días, y histórico mensual cada mes).
 
 **b)** Definiremos un Crawler de Glue que se ejecutara diariamente para
 detectar datos nuevos en S3 y dejarlos disponibles en Athena
 
-**c)** Finalmente habrá un proyecto CodeBuild que sera lanzado automaticamente
+**c)** Finalmente habrá un proyecto CodeBuild que será lanzado automáticamente
 cada vez que Glue termine y que se encargará de pasar los datos de Athena
 a RDS PostgreSQL ([buildspec/update.yml](buildspec/update.yml))
 
@@ -61,6 +61,6 @@ que:
 * a las 7:00 ejecutamos Glue
 * cuando termine Glue se volcaran los datos en RDS PostgreSQL
 
-Suponiendo que los datos diarios tardan en recogerse 15min, las predicciones
+Suponiendo que los datos diarios tardan en recogerse 15 minutos, las predicciones
 40 minutos, Glue tarda 7 minutos y el volcado a RDS PostgreSQL 3 minutos,
 el resultado final estará disponible a las 7:10

@@ -1,9 +1,9 @@
-from bunch import Bunch
+from munch import Munch
 
 
 def get_provincias():
-    return Bunch(**{
-        k: Bunch(nombre=v) for k, v in (
+    return Munch(**{
+        k: Munch(nombre=v) for k, v in (
             ("01", "Araba/Álava"),
             ("02", "Albacete"),
             ("03", "Alicante/Alacant"),
@@ -63,11 +63,11 @@ def get_provincias():
 def prov_to_cod(p):
     p = p.upper()
     for a, b in (
-        ("Á", "A"),
-        ("É", "E"),
-        ("Í", "I"),
-        ("Ó", "O"),
-        ("Ú", "U"),
+            ("Á", "A"),
+            ("É", "E"),
+            ("Í", "I"),
+            ("Ó", "O"),
+            ("Ú", "U"),
     ):
         p = p.replace(a, b)
     p = p.split("/")[0].strip()
