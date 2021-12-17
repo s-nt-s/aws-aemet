@@ -12,7 +12,7 @@ class Bucket:
         self.new_files = []
         self.uploaded = []
 
-    def up_gz(self, data, target: str, commet: str = None, overwrite: bool = True):
+    def up_gz(self, data, target: str, comment: str = None, overwrite: bool = True):
         """
         Sube un fichero a s3 y lo comprime con gzip
 
@@ -20,7 +20,7 @@ class Bucket:
             str -> se almacena como .txt
             object -> se almacena como .json
         :param target: ruta del fichero a crear, o directorio donde debe crearse el fichero
-        :param commet: comentario a incluir en el fichero (para depuración)
+        :param comment: comentario a incluir en el fichero (para depuración)
         :param overwrite: indica si se debe sobreescribir el fichero si este ya existe
         :return:
             True si se guarda el fichero
@@ -61,8 +61,8 @@ class Bucket:
                     gz.write((json.dumps(data) + "\n").encode())
                 for i in data:
                     gz.write((json.dumps(i) + "\n").encode())
-            if commet is not None:
-                gz.write("/* {} */".format(commet).encode())
+            if comment is not None:
+                gz.write("/* {} */".format(comment).encode())
         compressed_fp.seek(0)
         self.uploaded.append(target)
         r = self.bucket.upload_fileobj(

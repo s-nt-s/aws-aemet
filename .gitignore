@@ -1,6 +1,7 @@
 .idea
 node_modules
 .serverless
+notas/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
