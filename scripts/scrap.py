@@ -34,7 +34,7 @@ class Scrap:
         """
         if not self.api.bases:
             raise Exception("Bases no encontradas")
-        self.bucket.up_gz(self.api.bases, "raw/AEMET/BASES/", commet=self.api.last_url)
+        self.bucket.up_gz(self.api.bases, "raw/AEMET/BASES/", comment=self.api.last_url)
         return self.api.bases
 
     def get_years(self, table: str, base: str) -> set:
@@ -76,7 +76,7 @@ class Scrap:
                             self.bucket.up_gz(
                                 dias,
                                 target,
-                                commet=self.api.last_url
+                                comment=self.api.last_url
                             )
 
     def do_mes(self):
@@ -100,7 +100,7 @@ class Scrap:
                 self.bucket.up_gz(
                     meses,
                     target,
-                    commet=self.api.last_url
+                    comment=self.api.last_url
                 )
 
     def do_prediccion(self):
