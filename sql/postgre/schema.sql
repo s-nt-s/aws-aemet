@@ -127,7 +127,7 @@ COMMENT ON COLUMN aemet.meses.n_nub IS 'Nº de días nubosos';
 COMMENT ON COLUMN aemet.meses.n_tor IS 'Nº de días de tormenta';
 COMMENT ON COLUMN aemet.meses.np_001 IS 'Nº de días de precipitación >= 0,1 mm';
 COMMENT ON COLUMN aemet.meses.np_010 IS 'Nº de días de precipitación >= 1mm';
-COMMENT ON COLUMN aemet.meses.np_100 IS 'Nº de días de precipitación >= 100mm';
+COMMENT ON COLUMN aemet.meses.np_100 IS 'Nº de días de precipitación >= 10mm';
 COMMENT ON COLUMN aemet.meses.np_300 IS 'Nº de días de precipitación >= 30mm';
 COMMENT ON COLUMN aemet.meses.nt_00 IS 'Nº de días de temperatura mínima <= 0°';
 COMMENT ON COLUMN aemet.meses.nt_30 IS 'Nº de días de temperatura máxima >= 30°';
