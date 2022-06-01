@@ -37,15 +37,13 @@ class Aemet:
     """
     YEAR_ZERO = 1972
 
-    def __init__(self, key: str = os.environ.get("AEMET_KEY")):
+    def __init__(self, key: str = os.environ.get("AEMET_KEY"), sleep_time: int = int(os.environ.get("SLEEP_TIME", 60))):
+        if key in (None, ""):
+            logger.warning("No se ha facilitado api key, por lo tanto solo estarán disponibles los endpoints xml")
         self.key = key
-        if self.key is None:
-            logger.warning(
-                "No se ha facilitado api key, por lo tanto solo estarán disponibles los endpoints xml")
         self.now = datetime.now()
-        self.sleep_time = 60
-        self.requests_verify = not (os.environ.get(
-            "AVOID_REQUEST_VERIFY") == "true")
+        self.sleep_time = sleep_time
+        self.requests_verify = not(os.environ.get("AVOID_REQUEST_VERIFY") == "true")
         logger.info("requests_verify = " + str(self.requests_verify))
         self.url = readMunch("aemet.yml")
         self.last_url = None
@@ -324,7 +322,7 @@ class Aemet:
                 if bi > 1:
                     fin = fin - 1
         del_key = ("nombre", "provincia", "indicativo", "altitud")
-        logger.info("DIARIO %s [%s ,%s]", id, year, fin)
+        logger.info("DIARIO %s [%s, %s]", id, year, fin)
         url = self.url.estacion.diario.format(id=id, ini=year, fin=fin)
         data = self.get_json(url, no_data=[])
         if data is None or not isinstance(data, list):
