@@ -4,5 +4,5 @@ requests==2.24.0
 beautifulsoup4==4.9.1
 psycopg2==2.8.5
 PyYAML==5.4
-lxml==4.6.5
+lxml==4.9.1
 munch~=2.5.0
