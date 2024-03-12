@@ -121,7 +121,7 @@ def prov_to_cod(p):
         return "21"
     if p == "HUESCA":
         return "22"
-    if p in ("ILLES BALEARS", "BALEARS, ILLES"):
+    if p in ("ILLES BALEARS", "BALEARS, ILLES", "BALEARES"):
         return "07"
     if p == "JAEN":
         return "23"
